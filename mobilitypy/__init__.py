@@ -1,4 +1,6 @@
-__version__ = "0.0.1"
-from .mobility import AlloyParams, Mobility2DEG
+__version__ = "0.0.2"
 
-__all__ = ['AlloyParams', 'Mobility2DEG']
+from .mobility import AlloyParams, Mobility2DEG, Plottings
+
+## ==============================================================================
+__all__ = ['AlloyParams', 'Mobility2DEG', 'Plottings']
