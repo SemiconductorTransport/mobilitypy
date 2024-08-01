@@ -1,4 +1,6 @@
 '''
+Ref: Bassaler et. al., Adv. Electron. Mater. 2024, 2400069
+
 Units:
 mass_density => kg/m3
 lattice_a0 => angstrom

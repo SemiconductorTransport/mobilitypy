@@ -25,6 +25,8 @@ class _GeneratePlots:
                   'xtick.labelsize':24,
                   'xtick.major.width':2,
                   'xtick.major.size':5,
+                  'xtick.minor.width':1,
+                  'xtick.minor.size':2,
                   'ytick.labelsize': 24,
                   'ytick.major.width':2,
                   'ytick.major.size':5,
@@ -46,5 +48,11 @@ class _GeneratePlots:
         else:
             plt.savefig(f'{self.save_figure_folder}/{fig_name}', 
                         bbox_inches='tight', **kwargs_savefig)
+        plt.close()
         if CountFig is not None: CountFig += 1
         return CountFig
+
+    def save_figure(self,fig_name, savefig:bool=True, show_plot:bool=True,
+                     fig=None, CountFig=None, **kwargs_savefig):
+        return self._save_figure(fig_name, savefig=savefig, show_plot=show_plot,
+                     fig=fig, CountFig=CountFig, **kwargs_savefig)

@@ -3,9 +3,9 @@
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
-![](imgs/mobilities_300K.png) |
-:------------------------------:| 
-AlGaN/AlGaN HEMT 2DEG mobilities | 
+![](imgs/mobilities_300K.png) | ![](imgs/LFOM_norm_300K.png) 
+:------------------------------:| :------------------------------:
+AlGaN/AlGaN HEMT 2DEG mobilities | AlGaN/AlGaN HEMT lateral figure of merit 
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
@@ -77,8 +77,11 @@ mobilitypy package:
         1.1 get_alloy_params()
     2. Mobility2DEG class
         2.1 calculate_mobility()
+        2.2 calculate_figure_of_merit()
     3. Plottings class
         3.1 plot_2deg_mobilities()
+        3.2 plot_2d()
+        3.3 save_figure()
 ```
 
 <!-- =========================================================== -->
@@ -109,7 +112,7 @@ __Bibliography file:__ Here is the [bibliography file](docs/REFERENCES.md) for y
 
 <!-- =========================================================== -->
 ## Version release
-__Latest release: v0.0.2__
+__Latest release: v0.0.3__
 
 Chekout out [version release history here](docs/RELEASE.md) for the full list of updates and upgrades.
 

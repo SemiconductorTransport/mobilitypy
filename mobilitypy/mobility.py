@@ -38,6 +38,12 @@ class Mobility2DEG(_Mobility2DEG):
         return self._calculate_mobility(n_2d=n_2d, rms_roughness=rms_roughness, corr_len=corr_len, 
                                         n_dis=n_dis, f_dis=f_dis, T=T)
 
+    def calculate_figure_of_merit(self, n_2d, mobility, mode:str='LFOM', 
+                                   direct_bandgap:bool=True, indirect_bandgap:bool=False):
+        return self._calculate_figure_of_merit(n_2d, mobility, mode=mode, 
+                                               direct_bandgap=direct_bandgap, 
+                                               indirect_bandgap=indirect_bandgap)
+
 
 class Plottings(_plot_mobilities):   
     def __init__(self, save_figure_dir='.'):
@@ -51,10 +57,25 @@ class Plottings(_plot_mobilities):
 
         """
         self.save_figure_directory = save_figure_dir
+
+    def plot_2d(self, data2plot, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None,
+                ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, show_right_ticks:bool=False,
+                yaxis_label:str='', xaxis_label:str='', color=None, color_map='viridis', 
+                show_legend:bool=False, show_colorbar:bool=False, colorbar_label:str=None, 
+                savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
+        
+        _plot_mobilities.__init__(self, save_figure_dir=self.save_figure_directory)
+        return self._plot(data2plot, fig=fig, ax=ax, save_file_name=save_file_name, 
+                          CountFig=CountFig, ymin=ymin, ymax=ymax, xmax=xmax, xmin=xmin, 
+                          y_scale_log=y_scale_log, mode='plane_2d', yaxis_label=yaxis_label, 
+                          xaxis_label=xaxis_label, color=color, show_right_ticks=show_right_ticks,
+                          color_map=color_map, show_legend=show_legend, show_colorbar=show_colorbar, 
+                          colorbar_label=colorbar_label, savefig=savefig,
+                          vmin=vmin, vmax=vmax, show_plot=show_plot, **kwargs_savefig)
     
     def plot_2deg_mobilities(self, mobility_dataframe, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None, 
                              ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, mode:str= '2deg_mobility',
-                             mobility_model:str='Bassaler',
+                             mobility_model:str='Bassaler',annotate_pos=(0,0), show_right_ticks:bool=False,
                              yaxis_label:str=r'Electron mobility ($\mathrm{cm}^2\mathrm{V}^{-1}\mathrm{s}^{-1}$)',
                              xaxis_label:str='Composition', color=None, color_map='viridis', show_legend:bool=False, 
                              show_colorbar:bool=False, colorbar_label:str=None, savefig:bool=True,
@@ -63,6 +84,7 @@ class Plottings(_plot_mobilities):
         _plot_mobilities.__init__(self, save_figure_dir=self.save_figure_directory)
         return self._plot(mobility_dataframe, fig=fig, ax=ax, save_file_name=save_file_name, 
                           CountFig=CountFig, ymin=ymin, ymax=ymax, xmax=xmax, xmin=xmin, 
+                          annotate_pos=annotate_pos, show_right_ticks=show_right_ticks,
                           y_scale_log=y_scale_log, mode= mode, yaxis_label=yaxis_label, 
                           xaxis_label=xaxis_label, color=color, mobility_model=mobility_model,
                           color_map=color_map, show_legend=show_legend, show_colorbar=show_colorbar, 
