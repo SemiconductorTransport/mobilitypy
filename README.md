@@ -82,6 +82,9 @@ mobilitypy package:
         3.1 plot_2deg_mobilities()
         3.2 plot_2d()
         3.3 save_figure()
+    4. PlotQuasi3DFuns class
+        4.1 InterPolation()
+        4.2 Plotq3D()
 ```
 
 <!-- =========================================================== -->

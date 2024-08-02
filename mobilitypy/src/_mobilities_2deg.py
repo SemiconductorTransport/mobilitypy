@@ -45,7 +45,7 @@ class _Mobility2DEG(_AlloyParams):
             critical_electric_field = 1.73e5*(bandgap_**2.5) # V/cm
         elif indirect_bandgap:
             critical_electric_field = 2.38e5*(bandgap_**2) # V/cm
-
+        #print(bandgap_, n_2d)
         if mode == 'LFOM': #unit: W/cm^2
             return 1.6021766339999997e-05 * n_2d * mobility * critical_electric_field * critical_electric_field
         

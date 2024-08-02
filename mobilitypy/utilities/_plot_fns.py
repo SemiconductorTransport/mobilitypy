@@ -22,8 +22,9 @@ class _plot_mobilities(_GeneratePlots):
     def _plot(self, results, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None, 
               ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, mode:str= '2deg_mobility',
               mobility_model:str='Bassaler', annotate_pos=(0,0), show_right_ticks:bool=False,
+              title_text:str=None, xaxis_label:str='Composition', 
               yaxis_label:str=r'Electron mobility ($\mathrm{cm}^2\mathrm{V}^{-1}\mathrm{s}^{-1}$)',   
-              xaxis_label:str='Composition', color='gray', color_map='viridis', show_legend:bool=False, 
+              color='gray', color_map='viridis', show_legend:bool=False, 
               show_colorbar:bool=False, colorbar_label:str=None, savefig:bool=False,
               vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
         """
@@ -109,6 +110,8 @@ class _plot_mobilities(_GeneratePlots):
         ax.set_xlabel(xaxis_label)
         ax.set_ylim([ymin, ymax])
         ax.set_xlim([xmin, xmax])
+
+        if title_text is not None: ax.set_title(title_text)
         
         if show_right_ticks:
             ax.yaxis.set_ticks_position('both')

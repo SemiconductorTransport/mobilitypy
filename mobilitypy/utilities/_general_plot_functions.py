@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-
+from pathlib import Path
 ### ===========================================================================
 
 class _GeneratePlots:
@@ -41,7 +41,8 @@ class _GeneratePlots:
         if not savefig: 
             if show_plot: plt.show()
             return CountFig
-            
+
+        Path(self.save_figure_folder).mkdir(parents=True, exist_ok=True)
         if fig is not None:
             fig.savefig(f'{self.save_figure_folder}/{fig_name}', 
                         bbox_inches='tight', **kwargs_savefig)
@@ -55,4 +56,4 @@ class _GeneratePlots:
     def save_figure(self,fig_name, savefig:bool=True, show_plot:bool=True,
                      fig=None, CountFig=None, **kwargs_savefig):
         return self._save_figure(fig_name, savefig=savefig, show_plot=show_plot,
-                     fig=fig, CountFig=CountFig, **kwargs_savefig)
+                                 fig=fig, CountFig=CountFig, **kwargs_savefig)
