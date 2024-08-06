@@ -13,15 +13,13 @@ AlGaN/AlGaN HEMT 2DEG mobilities | AlGaN/AlGaN HEMT lateral figure of merit
 <!-- =========================================================== -->
 
 __Developer of mobilitypy :__
-
-* [Badal Mondal](https://github.com/bmondal94) 
+[Badal Mondal](https://github.com/bmondal94) 
 
 __Maintainer of mobilitypy :__
-* [Badal Mondal](https://github.com/bmondal94)
+[Badal Mondal](https://github.com/bmondal94)
 
 __Project collaborators :__
-
-* [Dr. Stefan Schulz, Tyndall National Institute](https://www.tyndall.ie/people/stefan-schulz/)
+[Dr. Stefan Schulz, Tyndall National Institute](https://www.tyndall.ie/people/stefan-schulz/)
 
 __mobilitypy Contributors:__  [Contributors](https://github.com/SemiconductorTransport/mobilitypy/graphs/contributors)
 

@@ -12,9 +12,9 @@ class AlloyParams(_AlloyParams):
 
 class Mobility2DEG(_Mobility2DEG):
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', print_log=None):
+                 system='ternary', eps_n_2d=1e-10, print_log=None):
         _Mobility2DEG.__init__(self, compositions=compositions, binaries=binaries, 
-                               alloy=alloy, system=system, print_log=print_log)
+                               alloy=alloy, system=system, print_log=print_log, eps_n_2d=eps_n_2d)
         
     def calculate_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, n_dis=1, f_dis=0.1, 
                            T=300, alloy_disordered_effect:bool=False,
@@ -26,14 +26,14 @@ class Mobility2DEG(_Mobility2DEG):
                            polar_optical_phonon_effect:bool=False,
                            total_mobility:bool=True,
                            mobility_model='Bassaler'):
-        self.alloy_disordered_effect_=alloy_disordered_effect,
-        self.interface_roughness_effect_=interface_roughness_effect,
-        self.dislocation_effect_=dislocation_effect,
-        self.deformation_potential_effect_=deformation_potential_effect,
-        self.piezoelectric_effect_=piezoelectric_effect,
-        self.acoustic_phonon_effect_=acoustic_phonon_effect,
-        self.polar_optical_phonon_effect_=polar_optical_phonon_effect,
-        self.total_mobility_=total_mobility,
+        self.alloy_disordered_effect_=alloy_disordered_effect
+        self.interface_roughness_effect_=interface_roughness_effect
+        self.dislocation_effect_=dislocation_effect
+        self.deformation_potential_effect_=deformation_potential_effect
+        self.piezoelectric_effect_=piezoelectric_effect
+        self.acoustic_phonon_effect_=acoustic_phonon_effect
+        self.polar_optical_phonon_effect_=polar_optical_phonon_effect
+        self.total_mobility_=total_mobility
         self.mobility_model_=mobility_model
         return self._calculate_mobility(n_2d=n_2d, rms_roughness=rms_roughness, corr_len=corr_len, 
                                         n_dis=n_dis, f_dis=f_dis, T=T)
@@ -57,14 +57,13 @@ class Plottings(_plot_mobilities):
 
         """
         self.save_figure_directory = save_figure_dir
+        _plot_mobilities.__init__(self, save_figure_dir=self.save_figure_directory)
 
     def plot_2d(self, data2plot, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None,
                 ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, show_right_ticks:bool=False,
                 title_text:str=None, yaxis_label:str='', xaxis_label:str='', color=None, color_map='viridis', 
                 show_legend:bool=False, show_colorbar:bool=False, colorbar_label:str=None, 
-                savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
-        
-        _plot_mobilities.__init__(self, save_figure_dir=self.save_figure_directory)
+                savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):  
         return self._plot(data2plot, fig=fig, ax=ax, save_file_name=save_file_name, 
                           CountFig=CountFig, ymin=ymin, ymax=ymax, xmax=xmax, xmin=xmin, 
                           y_scale_log=y_scale_log, mode='plane_2d', yaxis_label=yaxis_label, 
@@ -81,8 +80,6 @@ class Plottings(_plot_mobilities):
                              xaxis_label:str='Composition', color=None, color_map='viridis', show_legend:bool=False, 
                              show_right_ticks:bool=False, show_colorbar:bool=False, colorbar_label:str=None, 
                              savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
-        
-        _plot_mobilities.__init__(self, save_figure_dir=self.save_figure_directory)
         return self._plot(mobility_dataframe, fig=fig, ax=ax, save_file_name=save_file_name, 
                           CountFig=CountFig, ymin=ymin, ymax=ymax, xmax=xmax, xmin=xmin, 
                           annotate_pos=annotate_pos, show_right_ticks=show_right_ticks,

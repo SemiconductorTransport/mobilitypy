@@ -25,13 +25,13 @@ class _GeneratePlots:
                   'xtick.labelsize':24,
                   'xtick.major.width':2,
                   'xtick.major.size':5,
-                  'xtick.minor.width':1,
-                  'xtick.minor.size':2,
+                  'xtick.minor.width':2,
+                  'xtick.minor.size':3,
                   'ytick.labelsize': 24,
                   'ytick.major.width':2,
                   'ytick.major.size':5,
-                  'ytick.minor.width':1,
-                  'ytick.minor.size':2,
+                  'ytick.minor.width':2,
+                  'ytick.minor.size':3,
                   'errorbar.capsize':2}
         plt.rcParams.update(params)
         plt.rc('font', size=24)

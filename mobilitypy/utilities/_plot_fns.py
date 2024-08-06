@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from ._general_plot_functions import _GeneratePlots
+import matplotlib.ticker as ticker
 
 ### ===========================================================================
 class _plot_mobilities(_GeneratePlots):
@@ -168,3 +169,12 @@ class _plot_mobilities(_GeneratePlots):
     def _plot_2d_plane(cls, plot_data, ax, color=None, ls='-'):
         pp, = ax.plot(plot_data[:, 0], plot_data[:, 1], ls=ls, color=color)
         return ax, None
+
+    @classmethod
+    def set_tickers(cls, axs, tick_multiplicator=[None]*4):
+        if all(tick_multiplicator[:2]):
+            axs.xaxis.set_major_locator(ticker.MultipleLocator(base=tick_multiplicator[0]))
+            axs.xaxis.set_minor_locator(ticker.MultipleLocator(base=tick_multiplicator[1]))
+        if all(tick_multiplicator[2:]):
+            axs.yaxis.set_major_locator(ticker.MultipleLocator(base=tick_multiplicator[2]))
+            axs.yaxis.set_minor_locator(ticker.MultipleLocator(base=tick_multiplicator[3]))

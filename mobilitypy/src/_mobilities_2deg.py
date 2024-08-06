@@ -21,9 +21,11 @@ class _Mobility2DEG(_AlloyParams):
     '''
     
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', print_log=None):
+                 system='ternary', print_log=None, eps_n_2d=1e-10):
         self.print_info = print_log
         if self.print_info is not None: self.print_info = self.print_info.lower()
+
+        self.eps_n_2d = eps_n_2d
             
         _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, alloy=alloy)
         self._get_alloy_params(system=system)
@@ -35,6 +37,7 @@ class _Mobility2DEG(_AlloyParams):
         "An assessment of wide bandgap semiconductors for power devices," 
         in IEEE Transactions on Power Electronics, vol. 18, no. 3, pp. 907-914, 
         May 2003, doi: 10.1109/TPEL.2003.810840.
+        bandgap_ is in eV.
         direct_bandgap_critical_electric_field = 1.73e5*(bandgap_**2.5) # V/cm
         indirect_bandgap_critical_electric_field = 2.38e5*(bandgap_**2.5) # V/cm
         '''
@@ -46,8 +49,8 @@ class _Mobility2DEG(_AlloyParams):
         elif indirect_bandgap:
             critical_electric_field = 2.38e5*(bandgap_**2) # V/cm
         #print(bandgap_, n_2d)
-        if mode == 'LFOM': #unit: W/cm^2
-            return 1.6021766339999997e-05 * n_2d * mobility * critical_electric_field * critical_electric_field
+        if mode == 'LFOM': #unit: MW/cm^2
+            return 1.602176634e-11 * n_2d * mobility * critical_electric_field * critical_electric_field
         
     def _calculate_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, n_dis=1, f_dis=0.1, T=300):
         '''
@@ -87,43 +90,44 @@ class _Mobility2DEG(_AlloyParams):
                              T, electromech_coupling_sqr[ii], deformation_pot[ii], mass_densitty[ii], LA_velocity[ii], POP_energy[ii])
             self._print_database_params()
             # mobility unit: cm^2 V^-1 S^-1
-            if self.print_info is not None: print(f'- Composition: {self.comps_[ii]:.3f}')
+            if self.print_info is not None: print(f'- Composition: {self.comps_[ii]:.5f}')
             
             if self.interface_roughness_effect_:
-                if self.print_info is not None: print('-- Calculating interface roughness effect mobility')
+                if self.print_info is not None: print('\t-- Calculating interface roughness effect mobility')
                 mobility[ii]['IFR'] = self._mobility_calculator(interface_roughness_effect=True)
                 
             if self.alloy_disordered_effect_:
-                if self.print_info is not None: print('-- Calculating alloy-disordered mobility')
+                if self.print_info is not None: print('\t-- Calculating alloy-disordered mobility')
                 mobility[ii]['AD'] = self._mobility_calculator(alloy_disordered_effect=True)
                 
             if self.dislocation_effect_:
-                if self.print_info is not None: print('-- Calculating dislocation effect mobility')
+                if self.print_info is not None: print('\t-- Calculating dislocation effect mobility')
                 mobility[ii]['DIS'] = self._mobility_calculator(dislocation_effect=True)
                 
             if self.deformation_potential_effect_:
-                if self.print_info is not None: print('-- Calculating deformation potential effect mobility')
+                if self.print_info is not None: print('\t-- Calculating deformation potential effect mobility')
                 mobility[ii]['DP'] = self._mobility_calculator(deformation_potential_effect=True)
                 
             if self.piezoelectric_effect_:
-                if self.print_info is not None: print('-- Calculating piezoelectric effect mobility')
+                if self.print_info is not None: print('\t-- Calculating piezoelectric effect mobility')
                 mobility[ii]['PE'] = self._mobility_calculator(piezoelectric_effect=True)
                 
             if self.acoustic_phonon_effect_:
-                if self.print_info is not None: print('-- Calculating acoustic effect mobility')
+                if self.print_info is not None: print('\t-- Calculating acoustic effect mobility')
                 mobility[ii]['AP'] = self._mobility_calculator(acoustic_phonon_effect=True)
                 
             if self.polar_optical_phonon_effect_:
-                if self.print_info is not None: print('-- Calculating polar optical phonon effect mobility')
+                if self.print_info is not None: print('\t-- Calculating polar optical phonon effect mobility')
                 mobility[ii]['POP'] = self._mobility_calculator(polar_optical_phonon_effect=True)
                 
             if self.total_mobility_:
-                if self.print_info is not None: print('-- Calculating total mobility')
+                if self.print_info is not None: print('\t-- Calculating total mobility')
                 mobility[ii]['TOT'] = self._mobility_calculator(interface_roughness_effect=self.interface_roughness_effect_,
                                                                 dislocation_effect=self.dislocation_effect_,
                                                                 acoustic_phonon_effect=self.acoustic_phonon_effect_,
                                                                 alloy_disordered_effect=self.alloy_disordered_effect_,
                                                                 polar_optical_phonon_effect=self.polar_optical_phonon_effect_)
+            if self.print_info is not None: print(f'{"="*72}')
         return pd.DataFrame.from_dict(mobility, orient='index')
         
     def _set_params(self, m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
@@ -163,13 +167,13 @@ class _Mobility2DEG(_AlloyParams):
     def _print_database_params(self):
         if self.print_info == 'high':
             print(f'- Composition={self.comp_:.5f}')
-            print(f'-- a={self.a_lp:.5f} nm | c={self.c_lp:.5f} nm | m*={self.m_star_:.5f} m0 | eps_s={self.eps_s_:.5f} eps0 | eps_h={self.eps_h_:.5f} eps0')
-            print(f'-- Mass density={self.mass_density_:.2f} | scattering potential={self.sc_potential_:.2f} eV | 2deg density={self.n_2d_:.5f} nm^-2 | T={self.temp_:.1f} K')
-            print(f'-- Interface rms roughness={self.rms_roughness_:.3f} nm | correlation length={self.corr_len_:.3f} nm')
-            print(f'-- Dislocation density={self.n_dislocation_:.4f} nm^-2 | dislocation occupancy={self.f_dislocation_:.1f}')
-            print(f'-- Electromechanical coupling coefficient={self.K_sqr:.5f} | deformation potential={self.E_d:.5f}')
-            print(f'-- Longitudinal acoustic phonon velocity={self.v_LA:.2f} m/s | polar optical phonon energy={self.E_pop:.5f} eV')
-            print(f'-- Fermi wave vector={self.k_F} | b={self.b_}')
+            print(f'\t-- a={self.a_lp:.5f} nm | c={self.c_lp:.5f} nm | m*={self.m_star_:.5f} m0 | eps_s={self.eps_s_:.5f} eps0 | eps_h={self.eps_h_:.5f} eps0')
+            print(f'\t-- Mass density={self.mass_density_:.2f} | scattering potential={self.sc_potential_:.2f} eV | 2deg density={self.n_2d_:.5f} nm^-2 | T={self.temp_:.1f} K')
+            print(f'\t-- Interface rms roughness={self.rms_roughness_:.3f} nm | correlation length={self.corr_len_:.3f} nm')
+            print(f'\t-- Dislocation density={self.n_dislocation_:.4f} nm^-2 | dislocation occupancy={self.f_dislocation_:.1f}')
+            print(f'\t-- Electromechanical coupling coefficient={self.K_sqr:.5f} | deformation potential={self.E_d:.5f}')
+            print(f'\t-- Longitudinal acoustic phonon velocity={self.v_LA:.2f} m/s | polar optical phonon energy={self.E_pop:.5f} eV')
+            print(f'\t-- Fermi wave vector={self.k_F} | b={self.b_}')
             print('')
 
     def _form_factor(self, x, mode=None):
@@ -208,7 +212,8 @@ class _Mobility2DEG(_AlloyParams):
         return sc.integrate.quad(self._inv_tau_ifr_f, 0, 1)[0]
 
     def _inv_tau_ifr(self):
-        fact_2 = (self.rms_roughness_ * self.corr_len_ * self.n_2d_)**2 / 8
+        if self.n_2d_ < self.eps_n_2d: return 0
+        fact_2 = (self.rms_roughness_ * self.corr_len_ * self.n_2d_)**2 / 8 
         return self.fact_1 * fact_2 * self._inv_tau_ifr_int() 
         
     # ----------- dislocation -------------------
@@ -224,6 +229,7 @@ class _Mobility2DEG(_AlloyParams):
 
     # ----------- alloy disordered -------------------
     def _inv_tau_ado(self):
+        if self.n_2d_ < self.eps_n_2d: return 0
         fact_2 = self.m_star_ * self.omega * self.sc_potential_**2 * self.comp_ * (1-self.comp_) * self.b_
         #print(fact_alloy, self.m_star_ ,self.omega ,self.sc_potential_, self.comp_ ,self.b_)
         return fact_alloy * fact_2
@@ -236,8 +242,9 @@ class _Mobility2DEG(_AlloyParams):
         return sc.integrate.quad(self._inv_tau_dp_f, 0, 1)[0]
         
     def _inv_tau_dp(self):
-        fact_2 = (3*self.E_d*self.E_d*self.m_star_*self.temp_*self.k_F*self.k_F*self.b_)/(self.mass_density_*self.v_LA*self.v_LA)
-        return fact_phonon * 1e9*fact_2 * self._inv_tau_dp_int()
+        if self.n_2d_ < self.eps_n_2d: return 0
+        fact_2 = (3*self.E_d*self.E_d*self.m_star_*self.temp_*self.k_F*self.k_F*self.b_)/(self.mass_density_*self.v_LA*self.v_LA) 
+        return fact_phonon * 1e9*fact_2 * self._inv_tau_dp_int() 
 
     # ----------- piezoelectric -------------------
     def _inv_tau_pe_f(self, x):
@@ -247,16 +254,19 @@ class _Mobility2DEG(_AlloyParams):
         return sc.integrate.quad(self._inv_tau_pe_f, 0, 1)[0]
         
     def _inv_tau_pe(self):
+        if self.n_2d_ < self.eps_n_2d: return 0
         fact_2 = (4*self.k_F*self.K_sqr*self.m_star_*self.temp_)/(eps_0*self.eps_s_)
-        return fact_phonon * 1e-9*fact_2 * self._inv_tau_pe_int()
+        return fact_phonon * 1e-9*fact_2 * self._inv_tau_pe_int() 
 
     # ----------- polar optical phonon -------------------
     def _inv_tau_pop(self):
+        if self.n_2d_ < self.eps_n_2d: return 0
         eps_star = 1/(1/self.eps_h_ - 1/self.eps_s_)
         fact_2 = self.m_star_ * self.E_pop * self._form_factor(None, mode='POP')/eps_star/self.k_0 
         yy = fact_pop_y*self.n_2d_/self.m_star_/self.temp_
-        fact_3 = yy / ((np.exp(self.E_pop*e_charge/k_B/self.temp_) - 1) * (1+yy-np.exp(-yy)))
-        return fact_pop * fact_2 * fact_3
+        fact_3 = yy / ((np.exp(self.E_pop*e_charge/k_B/self.temp_) - 1) * (1+yy-np.exp(-yy))) 
+        #print(yy, fact_3, fact_pop * fact_2 * fact_3)
+        return fact_pop * fact_2 * fact_3 
 
     # ----------- total mobility -------------------
     def _mobility_calculator(self, alloy_disordered_effect:bool=False,
@@ -284,4 +294,4 @@ class _Mobility2DEG(_AlloyParams):
             
         # 1e4 is unit conversion from m^2 to cm^2
         # unit: cm^2 V^-1 S^-1
-        return 1e4/(self.m0_by_e_ * inv_sc)
+        return 1e4/(self.m0_by_e_ * inv_sc) if inv_sc else np.nan
