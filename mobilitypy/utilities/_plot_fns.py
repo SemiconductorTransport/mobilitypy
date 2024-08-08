@@ -23,7 +23,7 @@ class _plot_mobilities(_GeneratePlots):
     def _plot(self, results, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None, 
               ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, mode:str= '2deg_mobility',
               mobility_model:str='Bassaler', annotate_pos=(0,0), show_right_ticks:bool=False,
-              title_text:str=None, xaxis_label:str='Composition', 
+              title_text:str=None, xaxis_label:str='Composition', ls_2d='-', 
               yaxis_label:str=r'Electron mobility ($\mathrm{cm}^2\mathrm{V}^{-1}\mathrm{s}^{-1}$)',   
               color='gray', color_map='viridis', show_legend:bool=False, 
               show_colorbar:bool=False, colorbar_label:str=None, savefig:bool=False,
@@ -97,7 +97,7 @@ class _plot_mobilities(_GeneratePlots):
             if mobility_model=='Bassaler':
                 ax, return_plot = self._plot_2deg_mobilities(results, ax, annotate_pos=annotate_pos, color=color)
         elif mode == 'plane_2d':
-                ax, return_plot = self._plot_2d_plane(results, ax, color=color)
+                ax, return_plot = self._plot_2d_plane(results, ax, color=color, ls=ls_2d)
         else:
             raise ValueError("Unknownplot mode: '{}'".format(mode))
             

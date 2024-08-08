@@ -5,7 +5,7 @@
 <!-- =========================================================== -->
 ![](imgs/mobilities_300K.png) | ![](imgs/LFOM_norm_300K.png) 
 :------------------------------:| :------------------------------:
-AlGaN/AlGaN HEMT 2DEG mobilities | AlGaN/AlGaN HEMT lateral figure of merit 
+AlN/AlGaN HEMT 2DEG mobilities | AlN/AlGaN HEMT lateral figure of merit 
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
@@ -104,8 +104,12 @@ If you use `mobilitypy` in your work, please:
          "The mobility calculation has been performed using the mobilitypy code"
 
   * **Read and cite the following papers** (and the appropriate references therein):
-    
->> 1. TBA
+
+        *  The analytical mobility models are implemented based on the following publications (*printing errors have been corrected in the implementation):
+>> 1. J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High Temperature Stability of Electron Mobility. [Adv. Electron. Mater. 2024, 2400069.](https://doi.org/10.1002/aelm.202400069)
+>> 2. Zhang, J., Hao, Y., Zhang, J. et al. The mobility of two-dimensional electron gas in AlGaN/GaN heterostructures with varied Al content. [Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008).](https://doi.org/10.1007/s11432-008-0056-7)
+
+__2DEG mobility analytical models:__ [Mobility2DEGAnalyticalModels.pdf](docs/Mobility2DEGAnalyticalModels.pdf)
 
 __Bibliography file:__ Here is the [bibliography file](docs/REFERENCES.md) for your convenience.
 

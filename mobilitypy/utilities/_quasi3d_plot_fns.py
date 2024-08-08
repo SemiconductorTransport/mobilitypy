@@ -52,13 +52,13 @@ class PlotQuasi3DFuns(_GeneratePlots):
                     cbar_text:str=None, show_colorbar:bool=False):
         self.fig, axs = self._set_figure(fig=fig, axs=axs)
 
-        # Plot linear interpolation to quad grid.
         CS = axs.contourf(xi, yi, zi, cmap=color_map, norm=norm)
         
         if show_contour_lines: 
             CS2 = axs.contour(CS, levels=CS.levels, colors='k')
         if show_colorbar:
-            self._set_colorbar(axs, self.fig, CS=CS, cbar_mappable=cbar_mappable, cbar_text=cbar_text)        
+            cbar=self._set_colorbar(axs, self.fig, CS=CS, cbar_mappable=cbar_mappable, 
+                                    cbar_text=cbar_text)        
         self._set_labels(axs, x_label=x_label, y_label=y_label, title_label=title_label)
         self._set_tickers(axs, tick_multiplicator=tick_multiplicator)
         return self.fig, axs
@@ -122,7 +122,7 @@ class PlotQuasi3DFuns(_GeneratePlots):
                 plot_controur:bool=False, plot_scatter:bool=True, 
                 interpolation_method='linear', interpolation_points:int = 20, 
                 colorbar_scale:bool='log', CountFig=None, show_plot:bool=False,
-                filename:str='test', savefigure:bool=False, **kwargs_savefig):
+                save_file_name:str='test', savefigure:bool=False, **kwargs_savefig):
         
         if plot_scatter:
             fig, ax = self._PlotScatter(xi, yi, zi, fig=fig, axs=ax, x_label=x_label, y_label=y_label,
@@ -143,6 +143,6 @@ class PlotQuasi3DFuns(_GeneratePlots):
             raise AttributeError('Not implemented')
         ax.set_xlim(xmin, xmax)
         ax.set_ylim(ymin, ymax)
-        self.save_figure(filename, savefig=savefigure, show_plot=show_plot,
+        self.save_figure(save_file_name, savefig=savefigure, show_plot=show_plot,
                          fig=fig, CountFig=CountFig, **kwargs_savefig)
         return fig, ax
