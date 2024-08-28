@@ -1,4 +1,10 @@
-__Latest release: v0.0.3__
+__Latest release: v0.0.4__
+
+__v0.0.4__
+
+* Improved plottings
+* Implemented sheet resistance
+
 
 __v0.0.3__
 

@@ -73,11 +73,12 @@ The detailed documentation is available [here](docs/USAGE.md). Explore the [tuto
 mobilitypy package:
     1. AlloyParams class
         1.1 get_alloy_params()
-    2. Mobility2DEG class
-        2.1 calculate_mobility()
-        2.2 calculate_figure_of_merit()
+    2. Mobility2DCarrier class
+        2.1 calculate_sheet_mobility()
+        2.2 calculate_sheet_resitance()
+        2.3 calculate_figure_of_merit()
     3. Plottings class
-        3.1 plot_2deg_mobilities()
+        3.1 plot_2d_carrier_mobilities()
         3.2 plot_2d()
         3.3 save_figure()
     4. PlotQuasi3DFuns class
@@ -117,7 +118,7 @@ __Bibliography file:__ Here is the [bibliography file](docs/REFERENCES.md) for y
 
 <!-- =========================================================== -->
 ## Version release
-__Latest release: v0.0.3__
+__Latest release: v0.0.4__
 
 Chekout out [version release history here](docs/RELEASE.md) for the full list of updates and upgrades.
 

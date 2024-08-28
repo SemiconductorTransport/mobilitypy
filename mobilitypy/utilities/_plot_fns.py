@@ -21,7 +21,7 @@ class _plot_mobilities(_GeneratePlots):
         _GeneratePlots.__init__(self, save_figure_dir=save_figure_dir)
     
     def _plot(self, results, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None, 
-              ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, mode:str= '2deg_mobility',
+              ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, mode:str= '2d_carrier_mobility',
               mobility_model:str='Bassaler', annotate_pos=(0,0), show_right_ticks:bool=False,
               title_text:str=None, xaxis_label:str='Composition', ls_2d='-', 
               yaxis_label:str=r'Electron mobility ($\mathrm{cm}^2\mathrm{V}^{-1}\mathrm{s}^{-1}$)',   
@@ -93,9 +93,9 @@ class _plot_mobilities(_GeneratePlots):
         if yaxis_label is None: yaxis_label=''
         if xaxis_label is None: xaxis_label=''
  
-        if mode == '2deg_mobility':
+        if mode == '2d_carrier_mobility':
             if mobility_model=='Bassaler':
-                ax, return_plot = self._plot_2deg_mobilities(results, ax, annotate_pos=annotate_pos, color=color)
+                ax, return_plot = self._plot_2d_carrier_mobilities(results, ax, annotate_pos=annotate_pos, color=color)
         elif mode == 'plane_2d':
                 ax, return_plot = self._plot_2d_plane(results, ax, color=color, ls=ls_2d)
         else:
@@ -125,7 +125,7 @@ class _plot_mobilities(_GeneratePlots):
         return self.fig, ax, CountFig
 
     @classmethod          
-    def _plot_2deg_mobilities(cls, mobility_df, ax, annotate_pos=(0,0), color=None):
+    def _plot_2d_carrier_mobilities(cls, mobility_df, ax, annotate_pos=(0,0), color=None):
         """
 
         Parameters

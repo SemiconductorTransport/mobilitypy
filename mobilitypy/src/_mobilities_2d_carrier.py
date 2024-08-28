@@ -5,7 +5,7 @@ from ._alloy_params import _AlloyParams
 from ._constants import *
 
 ## ==============================================================================
-class _Mobility2DEG(_AlloyParams):
+class _Mobility2DCarrier(_AlloyParams):
     '''
     The mobility models implementations are based on the following references.
     
@@ -30,6 +30,21 @@ class _Mobility2DEG(_AlloyParams):
         _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, alloy=alloy)
         self._get_alloy_params(system=system)
 
+    def _calculate_sheet_resitance(self, n_2d, mobility):
+        '''
+        n_2d => in nm^-2
+        e => 1.602176634e-19 C
+        mobility (mu) => cm^2 V^-1 s^-1
+        
+        1 coulomb/volt = 1 second/ohm
+        1 ohm = 1 C^-1.V.s
+
+        R = 1/(e * n_2d * mu) ohm/square
+          = 1/(1.602176634e-19*1e14 *n_2d * mu C.cm^-2.cm^2.V^-1.S^-1) 
+          = 62415.09074/(n_2d * mu) ohm/square
+        '''
+        return 62415.09074/(n_2d * mobility)
+
     def _calculate_figure_of_merit(self, n_2d, mobility, mode:str='LFOM', 
                                    direct_bandgap:bool=True, indirect_bandgap:bool=False):
         '''
@@ -37,9 +52,19 @@ class _Mobility2DEG(_AlloyParams):
         "An assessment of wide bandgap semiconductors for power devices," 
         in IEEE Transactions on Power Electronics, vol. 18, no. 3, pp. 907-914, 
         May 2003, doi: 10.1109/TPEL.2003.810840.
-        bandgap_ is in eV.
+        
         direct_bandgap_critical_electric_field = 1.73e5*(bandgap_**2.5) # V/cm
         indirect_bandgap_critical_electric_field = 2.38e5*(bandgap_**2.5) # V/cm
+
+        bandgap_ => in eV.
+        n_2d => in nm^-2
+        E_cr => in V/cm
+        e => 1.602176634e-19 C
+        mobility (mu) => cm^2 V^-1 s^-1
+        LFOM = e*n_2d*mu*E_cr^2 = 1.602e-19 C * 1e14 cm^-2 * cm^2 V^-1 s^-1 * V^2cm^-2
+                                = 1.602e-5 CVs^-1cm^-2
+                                = 1.602e-5 Wcm^-2    #1 watts = 1 coulombs*volt/second
+                                = 1.602e-11 MW/cm^2
         '''
         assert mode in ['LFOM'], 'Requested mode is not implemented yet' 
         bandgap_ = self.alloy_params_.get('bandgap')
@@ -52,7 +77,7 @@ class _Mobility2DEG(_AlloyParams):
         if mode == 'LFOM': #unit: MW/cm^2
             return 1.602176634e-11 * n_2d * mobility * critical_electric_field * critical_electric_field
         
-    def _calculate_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, n_dis=1, f_dis=0.1, T=300):
+    def _calculate_sheet_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, n_dis=1, f_dis=0.1, T=300):
         '''
         c_lattice => in nm
         a_lattice => in nm
@@ -91,34 +116,35 @@ class _Mobility2DEG(_AlloyParams):
             self._print_database_params()
             # mobility unit: cm^2 V^-1 S^-1
             if self.print_info is not None: print(f'- Composition: {self.comps_[ii]:.5f}')
-            
-            if self.interface_roughness_effect_:
-                if self.print_info is not None: print('\t-- Calculating interface roughness effect mobility')
-                mobility[ii]['IFR'] = self._mobility_calculator(interface_roughness_effect=True)
-                
-            if self.alloy_disordered_effect_:
-                if self.print_info is not None: print('\t-- Calculating alloy-disordered mobility')
-                mobility[ii]['AD'] = self._mobility_calculator(alloy_disordered_effect=True)
-                
-            if self.dislocation_effect_:
-                if self.print_info is not None: print('\t-- Calculating dislocation effect mobility')
-                mobility[ii]['DIS'] = self._mobility_calculator(dislocation_effect=True)
-                
-            if self.deformation_potential_effect_:
-                if self.print_info is not None: print('\t-- Calculating deformation potential effect mobility')
-                mobility[ii]['DP'] = self._mobility_calculator(deformation_potential_effect=True)
-                
-            if self.piezoelectric_effect_:
-                if self.print_info is not None: print('\t-- Calculating piezoelectric effect mobility')
-                mobility[ii]['PE'] = self._mobility_calculator(piezoelectric_effect=True)
-                
-            if self.acoustic_phonon_effect_:
-                if self.print_info is not None: print('\t-- Calculating acoustic effect mobility')
-                mobility[ii]['AP'] = self._mobility_calculator(acoustic_phonon_effect=True)
-                
-            if self.polar_optical_phonon_effect_:
-                if self.print_info is not None: print('\t-- Calculating polar optical phonon effect mobility')
-                mobility[ii]['POP'] = self._mobility_calculator(polar_optical_phonon_effect=True)
+
+            if not self.only_total_mobility:
+                if self.interface_roughness_effect_:
+                    if self.print_info is not None: print('\t-- Calculating interface roughness effect mobility')
+                    mobility[ii]['IFR'] = self._mobility_calculator(interface_roughness_effect=True)
+                    
+                if self.alloy_disordered_effect_:
+                    if self.print_info is not None: print('\t-- Calculating alloy-disordered mobility')
+                    mobility[ii]['AD'] = self._mobility_calculator(alloy_disordered_effect=True)
+                    
+                if self.dislocation_effect_:
+                    if self.print_info is not None: print('\t-- Calculating dislocation effect mobility')
+                    mobility[ii]['DIS'] = self._mobility_calculator(dislocation_effect=True)
+                    
+                if self.deformation_potential_effect_:
+                    if self.print_info is not None: print('\t-- Calculating deformation potential effect mobility')
+                    mobility[ii]['DP'] = self._mobility_calculator(deformation_potential_effect=True)
+                    
+                if self.piezoelectric_effect_:
+                    if self.print_info is not None: print('\t-- Calculating piezoelectric effect mobility')
+                    mobility[ii]['PE'] = self._mobility_calculator(piezoelectric_effect=True)
+                    
+                if self.acoustic_phonon_effect_:
+                    if self.print_info is not None: print('\t-- Calculating acoustic effect mobility')
+                    mobility[ii]['AP'] = self._mobility_calculator(acoustic_phonon_effect=True)
+                    
+                if self.polar_optical_phonon_effect_:
+                    if self.print_info is not None: print('\t-- Calculating polar optical phonon effect mobility')
+                    mobility[ii]['POP'] = self._mobility_calculator(polar_optical_phonon_effect=True)
                 
             if self.total_mobility_:
                 if self.print_info is not None: print('\t-- Calculating total mobility')

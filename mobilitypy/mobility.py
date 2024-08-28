@@ -1,4 +1,4 @@
-from .src import _Mobility2DEG, _AlloyParams
+from .src import _Mobility2DCarrier, _AlloyParams
 from .utilities import _plot_mobilities
 
 ## ==============================================================================
@@ -10,22 +10,28 @@ class AlloyParams(_AlloyParams):
         _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, alloy=alloy)
         return self._get_alloy_params(system=system)
 
-class Mobility2DEG(_Mobility2DEG):
+class Mobility2DCarrier(_Mobility2DCarrier):
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
                  system='ternary', eps_n_2d=1e-10, print_log=None):
-        _Mobility2DEG.__init__(self, compositions=compositions, binaries=binaries, 
-                               alloy=alloy, system=system, print_log=print_log, eps_n_2d=eps_n_2d)
+        _Mobility2DCarrier.__init__(self, compositions=compositions, binaries=binaries, 
+                                    alloy=alloy, system=system, print_log=print_log, eps_n_2d=eps_n_2d)
         
-    def calculate_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, n_dis=1, f_dis=0.1, 
-                           T=300, alloy_disordered_effect:bool=False,
-                           interface_roughness_effect:bool=False,
-                           dislocation_effect:bool=False,
-                           deformation_potential_effect:bool=False, 
-                           piezoelectric_effect:bool=False,
-                           acoustic_phonon_effect:bool=False,
-                           polar_optical_phonon_effect:bool=False,
-                           total_mobility:bool=True,
-                           mobility_model='Bassaler'):
+    def calculate_sheet_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, n_dis=1, f_dis=0.1, 
+                                 T=300, alloy_disordered_effect:bool=False,
+                                 interface_roughness_effect:bool=False,
+                                 dislocation_effect:bool=False,
+                                 deformation_potential_effect:bool=False, 
+                                 piezoelectric_effect:bool=False,
+                                 acoustic_phonon_effect:bool=False,
+                                 polar_optical_phonon_effect:bool=False,
+                                 total_mobility:bool=True,
+                                 calculate_total_mobility_only:bool=False,
+                                 mobility_model='Bassaler'):
+        '''
+        calculate_total_mobility_only : 
+            Calculate only the total mobility. If False the return data also contains individual 
+            specified contributions.
+        '''
         self.alloy_disordered_effect_=alloy_disordered_effect
         self.interface_roughness_effect_=interface_roughness_effect
         self.dislocation_effect_=dislocation_effect
@@ -33,10 +39,15 @@ class Mobility2DEG(_Mobility2DEG):
         self.piezoelectric_effect_=piezoelectric_effect
         self.acoustic_phonon_effect_=acoustic_phonon_effect
         self.polar_optical_phonon_effect_=polar_optical_phonon_effect
+        self.only_total_mobility = calculate_total_mobility_only
         self.total_mobility_=total_mobility
         self.mobility_model_=mobility_model
-        return self._calculate_mobility(n_2d=n_2d, rms_roughness=rms_roughness, corr_len=corr_len, 
-                                        n_dis=n_dis, f_dis=f_dis, T=T)
+        return self._calculate_sheet_mobility(n_2d=n_2d, rms_roughness=rms_roughness, 
+                                              corr_len=corr_len, n_dis=n_dis, 
+                                              f_dis=f_dis, T=T)
+
+    def calculate_sheet_resitance(self, n_2d, mobility):
+        return self._calculate_sheet_resitance(n_2d, mobility)
 
     def calculate_figure_of_merit(self, n_2d, mobility, mode:str='LFOM', 
                                    direct_bandgap:bool=True, indirect_bandgap:bool=False):
@@ -73,13 +84,13 @@ class Plottings(_plot_mobilities):
                           colorbar_label=colorbar_label, savefig=savefig,
                           vmin=vmin, vmax=vmax, show_plot=show_plot, **kwargs_savefig)
     
-    def plot_2deg_mobilities(self, mobility_dataframe, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None, 
-                             ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, mode:str= '2deg_mobility',
-                             title_text:str=None, mobility_model:str='Bassaler', annotate_pos=(0,0), 
-                             yaxis_label:str=r'Electron mobility ($\mathrm{cm}^2\mathrm{V}^{-1}\mathrm{s}^{-1}$)',
-                             xaxis_label:str='Composition', color=None, color_map='viridis', show_legend:bool=False, 
-                             show_right_ticks:bool=False, show_colorbar:bool=False, colorbar_label:str=None, 
-                             savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
+    def plot_2d_carrier_mobilities(self, mobility_dataframe, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None, 
+                                   ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, mode:str= '2d_carrier_mobility',
+                                   title_text:str=None, mobility_model:str='Bassaler', annotate_pos=(0,0), 
+                                   yaxis_label:str=r'$\mu$ ($\mathrm{cm}^2\mathrm{V}^{-1}\mathrm{s}^{-1}$)',
+                                   xaxis_label:str='Composition', color=None, color_map='viridis', show_legend:bool=False, 
+                                   show_right_ticks:bool=False, show_colorbar:bool=False, colorbar_label:str=None, 
+                                   savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
         return self._plot(mobility_dataframe, fig=fig, ax=ax, save_file_name=save_file_name, 
                           CountFig=CountFig, ymin=ymin, ymax=ymax, xmax=xmax, xmin=xmin, 
                           annotate_pos=annotate_pos, show_right_ticks=show_right_ticks,

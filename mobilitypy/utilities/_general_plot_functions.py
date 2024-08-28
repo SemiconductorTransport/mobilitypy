@@ -20,6 +20,7 @@ class _GeneratePlots:
         self.save_figure_folder = save_figure_dir
         params = {'figure.figsize': (8, 6),
                   'legend.fontsize': 18,
+                  'legend.title_fontsize': 18,
                   'axes.labelsize': 24,
                   'axes.titlesize': 24,
                   'xtick.labelsize':24,
