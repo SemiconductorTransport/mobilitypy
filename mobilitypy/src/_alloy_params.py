@@ -17,6 +17,7 @@ class _AlloyParams:
         for key, bowing in alloy_params_db.items():
             self.alloy_params_[key] = self.comps_ * bin_1_params_db.get(key) +\
             (1-self.comps_) * bin_2_params_db.get(key) - bowing*self.comps_*(1-self.comps_)
+        #print(self.alloy_params_)
             
     def _get_alloy_params(self, system='ternary'):
         if self.comps_ is None:

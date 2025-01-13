@@ -49,9 +49,11 @@ class Mobility2DCarrier(_Mobility2DCarrier):
     def calculate_sheet_resitance(self, n_2d, mobility):
         return self._calculate_sheet_resitance(n_2d, mobility)
 
-    def calculate_figure_of_merit(self, n_2d, mobility, mode:str='LFOM', 
+    def calculate_figure_of_merit(self, n_2d, mobility, temp:float=300,
+                                   mode:str='LFOM', T_corect_bandgap:bool=False, 
                                    direct_bandgap:bool=True, indirect_bandgap:bool=False):
-        return self._calculate_figure_of_merit(n_2d, mobility, mode=mode, 
+        return self._calculate_figure_of_merit(n_2d, mobility, temp=temp, mode=mode,
+                                               T_corect_bandgap=T_corect_bandgap,
                                                direct_bandgap=direct_bandgap, 
                                                indirect_bandgap=indirect_bandgap)
 
@@ -86,14 +88,15 @@ class Plottings(_plot_mobilities):
     
     def plot_2d_carrier_mobilities(self, mobility_dataframe, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None, 
                                    ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, mode:str= '2d_carrier_mobility',
-                                   title_text:str=None, mobility_model:str='Bassaler', annotate_pos=(0,0), 
+                                   title_text:str=None, mobility_model:str='Bassaler', annotate_pos=(0,0), annotatetextoffset=(0,-20),
                                    yaxis_label:str=r'$\mu$ ($\mathrm{cm}^2\mathrm{V}^{-1}\mathrm{s}^{-1}$)',
                                    xaxis_label:str='Composition', color=None, color_map='viridis', show_legend:bool=False, 
                                    show_right_ticks:bool=False, show_colorbar:bool=False, colorbar_label:str=None, 
                                    savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
         return self._plot(mobility_dataframe, fig=fig, ax=ax, save_file_name=save_file_name, 
                           CountFig=CountFig, ymin=ymin, ymax=ymax, xmax=xmax, xmin=xmin, 
-                          annotate_pos=annotate_pos, show_right_ticks=show_right_ticks,
+                          annotate_pos=annotate_pos, annotatetextoffset=annotatetextoffset,
+                          show_right_ticks=show_right_ticks,
                           y_scale_log=y_scale_log, mode= mode, yaxis_label=yaxis_label, 
                           title_text=title_text, xaxis_label=xaxis_label, color=color, 
                           mobility_model=mobility_model, color_map=color_map, 

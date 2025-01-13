@@ -1,13 +1,18 @@
 '''
-Ref: Bassaler et. al., Adv. Electron. Mater. 2024, 2400069
+Ref-1: Bassaler et. al., Adv. Electron. Mater. 2024, 2400069
+Ref-2: Pant et al, APL 117, 242105 (2020)
+Ref-3: http://www.ioffe.ru/SVA/NSM/Semicond/index.html
+Ref-4: Vurgaftman et. al., J. Appl. Phys. 94, 3675–3696 (2003)
 
 Units:
-mass_density => kg/m3
-lattice_a0 => angstrom
-lattice_c0 => angstrom
-bandgap => eV
-e_effective_mass => m0 # Pant et al, APL 117, 242105 (2020)
-alloy_scattering_potential => eV # Pant et al, APL 117, 242105 (2020)
+mass_density => kg/m3 # Ref-3
+lattice_a0 => angstrom # Ref-4
+lattice_c0 => angstrom # Ref-4
+bandgap => eV # Ref-4
+bandgap_alpha => eV/K # Ref-4
+bandgap_beta => K # Ref-4
+e_effective_mass => m0 # Ref-2
+alloy_scattering_potential => eV # Ref-2
 static_dielectric_constant => epsilon_0
 high_frequency_dielectric_constant => epsilon_0
 LA_phonon_velocity => m/s
@@ -20,8 +25,10 @@ database = {'GaN':
             {'mass_density': 6150,
              'lattice_a0': 3.189,
              'lattice_c0': 5.185,
-             'bandgap': 3.43,
-             'e_effective_mass': 0.209,
+             'bandgap': 3.510,
+             'bandgap_alpha': 0.909e-3,
+             'bandgap_beta': 830,
+             'e_effective_mass': 0.20,
              'alloy_scattering_potential': 1.0,
              'static_dielectric_constant': 8.90,
              'high_frequency_dielectric_constant': 5.35,
@@ -34,8 +41,10 @@ database = {'GaN':
             {'mass_density': 3230,
              'lattice_a0': 3.112,
              'lattice_c0': 4.982,
-             'bandgap': 6.20,
-             'e_effective_mass': 0.313,
+             'bandgap': 6.25,
+             'bandgap_alpha': 1.799e-3,
+             'bandgap_beta': 1462,
+             'e_effective_mass': 0.31,
              'alloy_scattering_potential': 1.8,
              'static_dielectric_constant': 8.50,
              'high_frequency_dielectric_constant': 4.60,
@@ -49,6 +58,8 @@ database = {'GaN':
              'lattice_a0': 0,
              'lattice_c0': 0,
              'bandgap': 0.7,
+             'bandgap_alpha': 0,
+             'bandgap_beta': 0,
              'e_effective_mass': 0,
              'alloy_scattering_potential': -1.6,
              'static_dielectric_constant': 0,

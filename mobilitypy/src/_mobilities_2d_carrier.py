@@ -45,7 +45,16 @@ class _Mobility2DCarrier(_AlloyParams):
         '''
         return 62415.09074/(n_2d * mobility)
 
-    def _calculate_figure_of_merit(self, n_2d, mobility, mode:str='LFOM', 
+    def _apply_Varshni_T_correction_2_bandgap(self, bandgap_0, temp:float=300, 
+                                              bandgap_alpha:float=0, bandgap_beta:float=0):
+        '''
+        Varshni's formula for temperature correction to bandgap.
+        Eg(T) = Eg(T=0) - [aT^2/(T+b)]
+        '''
+        return bandgap_0 - (bandgap_alpha*temp*temp/(temp+bandgap_beta))
+
+    def _calculate_figure_of_merit(self, n_2d, mobility, temp:float=300, mode:str='LFOM', 
+                                   T_corect_bandgap:bool=True,
                                    direct_bandgap:bool=True, indirect_bandgap:bool=False):
         '''
         J. L. Hudgins, G. S. Simin, E. Santi and M. A. Khan, 
@@ -57,6 +66,7 @@ class _Mobility2DCarrier(_AlloyParams):
         indirect_bandgap_critical_electric_field = 2.38e5*(bandgap_**2.5) # V/cm
 
         bandgap_ => in eV.
+        temp => in K
         n_2d => in nm^-2
         E_cr => in V/cm
         e => 1.602176634e-19 C
@@ -68,6 +78,12 @@ class _Mobility2DCarrier(_AlloyParams):
         '''
         assert mode in ['LFOM'], 'Requested mode is not implemented yet' 
         bandgap_ = self.alloy_params_.get('bandgap')
+        bandgap_alpha_ = self.alloy_params_.get('bandgap_alpha')
+        bandgap_beta_ = self.alloy_params_.get('bandgap_beta')
+        if T_corect_bandgap:
+            bandgap_ = self._apply_Varshni_T_correction_2_bandgap(bandgap_, temp=temp,
+                                                                  bandgap_alpha=bandgap_alpha_,
+                                                                  bandgap_beta=bandgap_beta_)
         
         if direct_bandgap:
             critical_electric_field = 1.73e5*(bandgap_**2.5) # V/cm

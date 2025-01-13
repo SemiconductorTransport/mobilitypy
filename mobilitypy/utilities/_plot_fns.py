@@ -22,8 +22,9 @@ class _plot_mobilities(_GeneratePlots):
     
     def _plot(self, results, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None, 
               ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, mode:str= '2d_carrier_mobility',
-              mobility_model:str='Bassaler', annotate_pos=(0,0), show_right_ticks:bool=False,
-              title_text:str=None, xaxis_label:str='Composition', ls_2d='-', 
+              mobility_model:str='Bassaler', annotate_pos=(0,0), annotatetextoffset=(0,-20), 
+              show_right_ticks:bool=False, title_text:str=None, 
+              xaxis_label:str='Composition', ls_2d='-', 
               yaxis_label:str=r'Electron mobility ($\mathrm{cm}^2\mathrm{V}^{-1}\mathrm{s}^{-1}$)',   
               color='gray', color_map='viridis', show_legend:bool=False, 
               show_colorbar:bool=False, colorbar_label:str=None, savefig:bool=False,
@@ -95,7 +96,8 @@ class _plot_mobilities(_GeneratePlots):
  
         if mode == '2d_carrier_mobility':
             if mobility_model=='Bassaler':
-                ax, return_plot = self._plot_2d_carrier_mobilities(results, ax, annotate_pos=annotate_pos, color=color)
+                ax, return_plot = self._plot_2d_carrier_mobilities(results, ax, annotate_pos=annotate_pos, 
+                                                                   xytextoffset=annotatetextoffset,color=color)
         elif mode == 'plane_2d':
                 ax, return_plot = self._plot_2d_plane(results, ax, color=color, ls=ls_2d)
         else:
@@ -125,7 +127,7 @@ class _plot_mobilities(_GeneratePlots):
         return self.fig, ax, CountFig
 
     @classmethod          
-    def _plot_2d_carrier_mobilities(cls, mobility_df, ax, annotate_pos=(0,0), color=None):
+    def _plot_2d_carrier_mobilities(cls, mobility_df, ax, annotate_pos=(0,0), xytextoffset=(0,-20),color=None):
         """
 
         Parameters
@@ -134,17 +136,6 @@ class _plot_mobilities(_GeneratePlots):
             Data to plot.
         ax : matplotlib.pyplot axis, optional
             Figure axis to plot on.
-        color : matplotlib color/str, optional
-            Color of the plots. The default is None.
-        plot_colormap : bool, optional
-        color_map : str/ matplotlib colormap
-            Colormap for density plot.The default is 'viridis'.
-        min_z : float, optional
-            Minimum in the color scale. 
-            The default is None. If None, determined from the data array supplied.
-        max_z : float, optional
-            Maximum in the color scale.
-            The default is None. If None, determined from the data array supplied.
 
         Returns
         -------
@@ -157,11 +148,12 @@ class _plot_mobilities(_GeneratePlots):
         comp_ = np.array(mobility_df['comp'], dtype=float)
         for mu in list(mobility_df.keys())[1:]:
             ls='--' if 'TOT' in mu else '-'
+            xytextoffset_ = (0,1) if mu in ['DP', 'AD'] else xytextoffset
             YY = np.array(mobility_df[mu], dtype=float)
             pp, = ax.plot(comp_, YY, ls=ls, color=color)
             color_pp = pp.get_color()
             ax.annotate(mu, (comp_[annotate_pos[0]], YY[annotate_pos[1]]), xycoords='data',
-                        color=color_pp, xytext=(0, -20),  # -20 points vertical offset.
+                        color=color_pp, xytext=xytextoffset_,  # -20 points vertical offset.
                         textcoords='offset points', ha='center', va='bottom', size=18)
         return ax, None
 
