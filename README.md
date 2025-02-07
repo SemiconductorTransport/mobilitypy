@@ -3,9 +3,9 @@
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
-![](imgs/mobilities_300K.png) | ![](imgs/LFOM_norm_300K.png) | ![](imgs/LFOM_norm_T_dependence.png) | ![](imgs/Mobility_plot_3D.png)
-:------------------------------:| :------------------------------:| :------------------------------:| :------------------------------:
-AlN/AlGaN HEMT 2DEG mobilities | AlN/AlGaN HEMT lateral figure of merit | AlN/AlGaN HEMT lateral figure of merit (Temperature effect) | AlGaN/AlGaN HEMT mobility plot
+![](imgs/mobilities_300K.png) | ![](imgs/LFOM_norm_300K.png) | ![](imgs/LFOM_norm_T_dependence.png) 
+:------------------------------:| :------------------------------:| :------------------------------:
+AlN/AlGaN HEMT 2DEG mobilities | AlN/AlGaN HEMT lateral figure of merit | AlN/AlGaN HEMT lateral figure of merit (Temperature effect) 
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
