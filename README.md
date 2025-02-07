@@ -1,12 +1,17 @@
-# `mobilitypy`: Python package for mobility calculations in semiconductor heterostructures (e.g. High electron mobility transistors)
+# `mobilitypy`: Python package for mobility calculations in semiconductor heterostructures
 
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
-![](imgs/mobilities_300K.png) | ![](imgs/LFOM_norm_300K.png) | ![](imgs/LFOM_norm_T_dependence.png) | ![](imgs/Mobility_plot_3D)
+![](imgs/mobilities_300K.png) | ![](imgs/LFOM_norm_300K.png) | ![](imgs/LFOM_norm_T_dependence.png) | ![](imgs/Mobility_plot_3D.png)
 :------------------------------:| :------------------------------:| :------------------------------:| :------------------------------:
 AlN/AlGaN HEMT 2DEG mobilities | AlN/AlGaN HEMT lateral figure of merit | AlN/AlGaN HEMT lateral figure of merit (Temperature effect) | AlGaN/AlGaN HEMT mobility plot
 <!-- =========================================================== -->
+
+<!-- =========================================================== -->
+## Systems
+<!-- =========================================================== -->
+### 1. High electron mobility transistors (HEMTs)
 
 <!-- =========================================================== -->
 ## Developers and contributors
@@ -17,9 +22,6 @@ __Developer of mobilitypy :__
 
 __Maintainer of mobilitypy :__
 [Badal Mondal](https://github.com/bmondal94)
-
-__Project collaborators :__
-[Dr. Stefan Schulz, Tyndall National Institute](https://www.tyndall.ie/people/stefan-schulz/)
 
 __mobilitypy Contributors:__  [Contributors](https://github.com/SemiconductorTransport/mobilitypy/graphs/contributors)
 
