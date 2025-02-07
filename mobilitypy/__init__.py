@@ -1,4 +1,4 @@
-__version__ = "0.0.4"
+__version__ = "1.0.0"
 
 from .mobility import AlloyParams, Mobility2DCarrier, Plottings
 from .utilities._quasi3d_plot_fns import PlotQuasi3DFuns

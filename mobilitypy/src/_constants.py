@@ -1,13 +1,15 @@
 import scipy as sc
 
-## ==============================================================================
+## ============================================================================
+# Universal constants
 e_charge = sc.constants.e # C
 pi_ = sc.constants.pi 
 eps_0 = sc.constants.epsilon_0 # CV^-1m^-1
 h_bar = sc.constants.hbar # J.s
 e_mass = sc.constants.m_e # kg
 k_B = sc.constants.Boltzmann # J K^-1
-## ==============================================================================
+## ============================================================================
+## Constants for different mobility equations
 fact_q_TF = 37.79452249229504 # m0 * e^2 / (2pi * eps_0 * h_bar^2) * 1e-9 => nm^-1
 fact_b = 9.931409618986013 # (33pi/4 * fact_q_TF)^(1/3) => nm^-1/3
 fact_irf_dis = 6.528368003403906e+18 # (m0*e^4)/(h_bar^3*eps_0^2) => s^-1

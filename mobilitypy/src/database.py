@@ -21,7 +21,10 @@ deformation_potential => eV
 PO_phonon_energy => eV
 electromechanical_coupling_const => unitless
 '''
-database = {'GaN': 
+database = {
+            # ========================== Binaries =============================
+            # GaN, AlN
+            'GaN': 
             {'mass_density': 6150,
              'lattice_a0': 3.189,
              'lattice_c0': 5.185,
@@ -36,7 +39,8 @@ database = {'GaN':
              'TA_phonon_velocity': 2680,
              'deformation_potential': 8.3,
              'PO_phonon_energy': 91.2e-3,
-             'electromechanical_coupling_const': 0.045},
+             'electromechanical_coupling_const': 0.045
+             },
            'AlN': 
             {'mass_density': 3230,
              'lattice_a0': 3.112,
@@ -52,8 +56,11 @@ database = {'GaN':
              'TA_phonon_velocity': 3700,
              'deformation_potential': 9.5,
              'PO_phonon_energy': 99.0e-3,
-             'electromechanical_coupling_const': 0.106},
-           'AlGaN': 
+             'electromechanical_coupling_const': 0.106
+             },
+            # ========================== Ternaries ============================
+            # AlGaN
+           'AlGaN': # AlGaN == AlxGa(1-x)N, GaxAl(1-x)N  => Binaries=[AlN, GaN]
             {'mass_density': 0,
              'lattice_a0': 0,
              'lattice_c0': 0,
@@ -68,4 +75,6 @@ database = {'GaN':
              'TA_phonon_velocity': 0,
              'deformation_potential': 0,
              'PO_phonon_energy': 0,
-             'electromechanical_coupling_const': 0}}
+             'electromechanical_coupling_const': 0
+             }
+            }

@@ -1,11 +1,11 @@
-# `mobilitypy`: Python package for mobility calculations in semiconductors
+# `mobilitypy`: Python package for mobility calculations in semiconductor heterostructures (e.g. High electron mobility transistors)
 
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
-![](imgs/mobilities_300K.png) | ![](imgs/LFOM_norm_300K.png) 
-:------------------------------:| :------------------------------:
-AlN/AlGaN HEMT 2DEG mobilities | AlN/AlGaN HEMT lateral figure of merit 
+![](imgs/mobilities_300K.png) | ![](imgs/LFOM_norm_300K.png) | ![](imgs/LFOM_norm_T_dependence.png) | ![](imgs/Mobility_plot_3D)
+:------------------------------:| :------------------------------:| :------------------------------:| :------------------------------:
+AlN/AlGaN HEMT 2DEG mobilities | AlN/AlGaN HEMT lateral figure of merit | AlN/AlGaN HEMT lateral figure of merit (Temperature effect) | AlGaN/AlGaN HEMT mobility plot
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
@@ -23,7 +23,7 @@ __Project collaborators :__
 
 __mobilitypy Contributors:__  [Contributors](https://github.com/SemiconductorTransport/mobilitypy/graphs/contributors)
 
-* We sincerely thank each and every contributor for their valuable input and support.
+* We sincerely thank each and every contributors for their valuable input and support.
 
 __Contact us:__ [Email developer/maintainer team](mailto:badalmondal.chembgc@gmail.com)
 
@@ -37,16 +37,17 @@ __Contact us:__ [Email developer/maintainer team](mailto:badalmondal.chembgc@gma
 ### 1. Requirements
 ```
     1. python>=3.12
-    3. numpy
-    4. pickle
-    5. scipy
-    6. matplotlib
+    2. numpy
+    3. scipy
+    4. matplotlib
+    5. pathlib
+    6. pandas
 ```
 
 ### 2. Installation using `pip` [not available yet]
 
 ```
-    pip install mobilitypy
+    TBA
 ```
 
 ### 3. Installation from github repository
@@ -67,6 +68,7 @@ Or, without cloning
 <!-- =========================================================== -->
 ## Usage
 __Documentation__: [here](docs/USAGE.md)
+__Material database__: [here](mobilitypy/src/database.py)
 
 The detailed documentation is available [here](docs/USAGE.md). Explore the [tutorial](tutorials) folder for example tutorials. Below are quick snippets showcasing what you can achieve with `mobilitypy`:
 ```
@@ -106,9 +108,10 @@ If you use `mobilitypy` in your work, please:
 
   * **Read and cite the following papers** (and the appropriate references therein):
 
-        *  The analytical mobility models are implemented based on the following publications (*printing errors have been corrected in the implementation):
+        *  The analytical mobility models are implemented based on the following publications:
 >> 1. J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High Temperature Stability of Electron Mobility. [Adv. Electron. Mater. 2024, 2400069.](https://doi.org/10.1002/aelm.202400069)
 >> 2. Zhang, J., Hao, Y., Zhang, J. et al. The mobility of two-dimensional electron gas in AlGaN/GaN heterostructures with varied Al content. [Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008).](https://doi.org/10.1007/s11432-008-0056-7)
+>> 3. Mondal et. al., TBA
 
 __2DEG mobility analytical models:__ [Mobility2DEGAnalyticalModels.pdf](docs/Mobility2DEGAnalyticalModels.pdf)
 
@@ -118,7 +121,7 @@ __Bibliography file:__ Here is the [bibliography file](docs/REFERENCES.md) for y
 
 <!-- =========================================================== -->
 ## Version release
-__Latest release: v0.0.4__
+__Latest release: v1.0.0__
 
 Chekout out [version release history here](docs/RELEASE.md) for the full list of updates and upgrades.
 

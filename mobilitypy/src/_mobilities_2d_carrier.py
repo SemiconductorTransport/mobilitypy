@@ -7,7 +7,8 @@ from ._constants import *
 ## ==============================================================================
 class _Mobility2DCarrier(_AlloyParams):
     '''
-    The mobility models implementations are based on the following references.
+    The functions in this class calculates the mobility of 2D carrier gas.  
+    The mobility models are implemented based on the following references.
     
     Ref-1: J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, 
     S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, 
@@ -18,10 +19,43 @@ class _Mobility2DCarrier(_AlloyParams):
     Ref-2: Zhang, J., Hao, Y., Zhang, J. et al. The mobility of two-dimensional electron gas in AlGaN/GaN 
     heterostructures with varied Al content. Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008). 
     https://doi.org/10.1007/s11432-008-0056-7
+    
+    Ref-3: Mondal et. al., TBA
     '''
     
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
                  system='ternary', print_log=None, eps_n_2d=1e-10):
+        """
+        Initiation function of the class _Mobility2DCarrier.
+        
+        Parameters
+        ----------
+        compositions : 1D array of float, optional
+            The alloy mole fractions. E.g. x values in Si_xGe_1-x. The default is None.
+            If None, a composition array is generated using `np.linspace(start=0.01, end=0.99, num=101)`.
+        binaries : list of strings (case sensitive), optional
+            Name of the corresponding binaries of requested alloy. They should
+            match the names in database. All implemented materials name list 
+            can be found in the README. 
+            The default is ['AlN', 'GaN'].
+        alloy : string (case sensitive), optional
+            The alloy name. The name should match the name in database. All   
+            implemented materials name list can be found in the README. Case sensitive.
+            The default is 'AlGaN'.
+        system : string (case sensitive), optional
+            Type of the alloy. E.g. 'ternary'. 
+            The default is 'ternary'.
+        print_log : string, optional => ['high','medium','low', None]
+            Determines the level of log to be printed. The default is None.
+        eps_n_2d : float, optional
+            Carrier density below eps_n_2d will be considered as zero. 
+            The default is 1e-10.
+
+        Returns
+        -------
+        None.
+
+        """
         self.print_info = print_log
         if self.print_info is not None: self.print_info = self.print_info.lower()
 
@@ -31,7 +65,10 @@ class _Mobility2DCarrier(_AlloyParams):
         self._get_alloy_params(system=system)
 
     def _calculate_sheet_resitance(self, n_2d, mobility):
-        '''
+        """
+        This function calculates the sheet resistance.
+        
+        Units:
         n_2d => in nm^-2
         e => 1.602176634e-19 C
         mobility (mu) => cm^2 V^-1 s^-1
@@ -42,40 +79,103 @@ class _Mobility2DCarrier(_AlloyParams):
         R = 1/(e * n_2d * mu) ohm/square
           = 1/(1.602176634e-19*1e14 *n_2d * mu C.cm^-2.cm^2.V^-1.S^-1) 
           = 62415.09074/(n_2d * mu) ohm/square
-        '''
+
+        Parameters
+        ----------
+        n_2d : 1D float array (nm^-2)
+            Array containing carrier density data for compositions. This can be
+            a single number as well. Then all compositions will have same carrier
+            density.
+        mobility : 1D float array (cm^2 V^-1 s^-1)
+            Array containing mobility data for compositions.
+
+        Returns
+        -------
+        1D float array (ohm/square)
+            Sheet resistance for compositions.
+
+        """
         return 62415.09074/(n_2d * mobility)
 
     def _apply_Varshni_T_correction_2_bandgap(self, bandgap_0, temp:float=300, 
                                               bandgap_alpha:float=0, bandgap_beta:float=0):
-        '''
-        Varshni's formula for temperature correction to bandgap.
+        """
+        This functions applies Varshni's formula for temperature correction to band gap.
         Eg(T) = Eg(T=0) - [aT^2/(T+b)]
-        '''
+
+        Parameters
+        ----------
+        bandgap_0 : 1D float array (eV)
+            Band gap values at 0K temperature.
+        temp : float, optional (K)
+            Temperature in K. The default is 300K.
+        bandgap_alpha : float, optional (eV/K)
+            Temperature correction coefficient alpha. The default is 0.
+        bandgap_beta : float, optional (K)
+            Temperature correction coefficient beta. The default is 0.
+
+        Returns
+        -------
+        1D float array (eV)
+            The temperature corrected band gap values.
+
+        """
         return bandgap_0 - (bandgap_alpha*temp*temp/(temp+bandgap_beta))
 
     def _calculate_figure_of_merit(self, n_2d, mobility, temp:float=300, mode:str='LFOM', 
-                                   T_corect_bandgap:bool=True,
+                                   T_corect_bandgap:bool=False,
                                    direct_bandgap:bool=True, indirect_bandgap:bool=False):
-        '''
-        J. L. Hudgins, G. S. Simin, E. Santi and M. A. Khan, 
+        """
+        This function calculates the figure-of-merit (FOM). Available FOMs are
+        LFOM: Lateral figure-of-merit
+        
+        Ref: J. L. Hudgins, G. S. Simin, E. Santi and M. A. Khan, 
         "An assessment of wide bandgap semiconductors for power devices," 
         in IEEE Transactions on Power Electronics, vol. 18, no. 3, pp. 907-914, 
         May 2003, doi: 10.1109/TPEL.2003.810840.
         
         direct_bandgap_critical_electric_field = 1.73e5*(bandgap_**2.5) # V/cm
         indirect_bandgap_critical_electric_field = 2.38e5*(bandgap_**2.5) # V/cm
-
+        
+        Units:
         bandgap_ => in eV.
         temp => in K
         n_2d => in nm^-2
         E_cr => in V/cm
         e => 1.602176634e-19 C
         mobility (mu) => cm^2 V^-1 s^-1
+        
+        
         LFOM = e*n_2d*mu*E_cr^2 = 1.602e-19 C * 1e14 cm^-2 * cm^2 V^-1 s^-1 * V^2cm^-2
                                 = 1.602e-5 CVs^-1cm^-2
                                 = 1.602e-5 Wcm^-2    #1 watts = 1 coulombs*volt/second
                                 = 1.602e-11 MW/cm^2
-        '''
+        
+        Parameters
+        ----------
+        n_2d : 1D float array (nm^-2)
+            Array containing carrier density data for compositions. This can be
+            a single number as well. Then all compositions will have same carrier
+            density.
+        mobility : 1D float array (cm^2 V^-1 s^-1)
+            Array containing mobility data for compositions.
+        temp : float, optional (K)
+            Temperature for band gap correction. The default is 300K.
+        mode : str, optional (['LFOM'])
+            The figure-of-merit name. The default is 'LFOM'.
+        T_corect_bandgap : bool, optional
+            Apply temperature correction to bandgap or not. The default is False.
+        direct_bandgap : bool, optional
+            If the bandgap is direct bandgap or not. The default is True.
+        indirect_bandgap : bool, optional
+            If the bandgap is indirect bandgap or not.. The default is False.
+
+        Returns
+        -------
+        1D float array (MW/cm^2)
+            Figure-of-merit.
+
+        """
         assert mode in ['LFOM'], 'Requested mode is not implemented yet' 
         bandgap_ = self.alloy_params_.get('bandgap')
         bandgap_alpha_ = self.alloy_params_.get('bandgap_alpha')
@@ -94,7 +194,32 @@ class _Mobility2DCarrier(_AlloyParams):
             return 1.602176634e-11 * n_2d * mobility * critical_electric_field * critical_electric_field
         
     def _calculate_sheet_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, n_dis=1, f_dis=0.1, T=300):
-        '''
+        """
+        This function calculates the sheet mobility from different scattering contributions.
+        The mobility models are implemented based on the following references.
+        
+        Ref-1: J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, 
+        S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, 
+        Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High 
+        Temperature Stability of Electron Mobility. Adv. Electron. Mater. 2024, 2400069. 
+        https://doi.org/10.1002/aelm.202400069
+
+        Ref-2: Zhang, J., Hao, Y., Zhang, J. et al. The mobility of two-dimensional electron gas in AlGaN/GaN 
+        heterostructures with varied Al content. Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008). 
+        https://doi.org/10.1007/s11432-008-0056-7
+        
+        Ref-3: Mondal et. al., TBA
+            
+        The considered scattering mechanism are:
+            Interface roughness mediated (IRF)
+            Threading dislocation mediated (DIS)
+            Alloy disorder limited (AD)
+            Deformation potential mediated (DP)
+            Piezoelectric effect (PE)
+            Acoustic phonon (AP)
+            Polar optical phonon (POP)
+        
+        Units:
         c_lattice => in nm
         a_lattice => in nm
         sc_potential => in eV
@@ -104,7 +229,33 @@ class _Mobility2DCarrier(_AlloyParams):
         n_dis => nm^-2
         f_dis => unit less
         E_pop => eV
-        '''
+
+        Parameters
+        ----------
+        n_2d : 1D float array or float (nm^-2)
+            Array containing carrier density data for compositions. This can be
+            a single number as well. Then all compositions will have same carrier
+            density.
+        rms_roughness : float, optional (nm^-1)
+            Interface root-mean-squared roughness for interface-roughness scattering
+            contribution. The default is 0.1.
+        corr_len : float, optional (nm^-1)
+            Correlation length of interface roughness. The default is 1.
+        n_dis : float, optional (nm^-2)
+            Threading dislocation density. The default is 1.
+        f_dis : float, optional
+            Fraction of dislocation that contributes in scattering. 
+            The default is 0.1.
+        T : float, optional (K)
+            Temperature at which mobility calculations will be done. 
+            The default is 300K.
+
+        Returns
+        -------
+        pandas dataframe of compositions and mobilities
+            Total (or individual contributions) sheet mobility .
+
+        """
         e_effective_mass = self.alloy_params_.get('e_effective_mass') 
         static_dielectric_constant = self.alloy_params_.get('static_dielectric_constant') 
         high_frequency_dielectric_constant = self.alloy_params_.get('high_frequency_dielectric_constant')
@@ -175,6 +326,9 @@ class _Mobility2DCarrier(_AlloyParams):
     def _set_params(self, m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
                     alloy_composition, n_2d, rms_roughness, corr_len, n_dis, f_dis, 
                     T, K_square, E_D, mass_density, v_LA, E_pop):
+        """
+        This function sets the parameters for mobility calculations.
+        """
         self.m_star_ = m_star
         self.eps_s_ = eps_s
         self.eps_h_ = eps_h
@@ -207,6 +361,14 @@ class _Mobility2DCarrier(_AlloyParams):
         self.k_0 = fact_pop_k0*np.sqrt(self.m_star_*self.E_pop) # nm^-1
 
     def _print_database_params(self):
+        """
+        This function prints the log of model descriptions.
+
+        Returns
+        -------
+        None.
+
+        """
         if self.print_info == 'high':
             print(f'- Composition={self.comp_:.5f}')
             print(f'\t-- a={self.a_lp:.5f} nm | c={self.c_lp:.5f} nm | m*={self.m_star_:.5f} m0 | eps_s={self.eps_s_:.5f} eps0 | eps_h={self.eps_h_:.5f} eps0')
@@ -219,6 +381,23 @@ class _Mobility2DCarrier(_AlloyParams):
             print('')
 
     def _form_factor(self, x, mode=None):
+        """
+        This function calculates Fang-Howard form-factors.
+
+        Parameters
+        ----------
+        x : float
+            Scattering states. x=sing(theta/2), theta=scattering angle.
+        mode : string, optional ['IRF', 'DIS', 'DP', 'PE', 'POP']
+            FW form factor which scattering mechanism. 
+            The default is None. If None, None is returned.
+
+        Returns
+        -------
+        float/None
+            FW form factor.
+
+        """
         # Fang-Howard form-factor
         if mode == 'IRF':
             # eta(u) = b/(b+2*k_f*u)
@@ -318,7 +497,32 @@ class _Mobility2DCarrier(_AlloyParams):
                              piezoelectric_effect:bool=False, 
                              acoustic_phonon_effect:bool=False, 
                              polar_optical_phonon_effect:bool=False):
-        mobility_model=self.mobility_model_
+        """
+        This function calculates the sheet mobility from different scattering contributions.
+        The mobility models are implemented based on the following references.
+        
+        Ref-1: J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, 
+        S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, 
+        Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High 
+        Temperature Stability of Electron Mobility. Adv. Electron. Mater. 2024, 2400069. 
+        https://doi.org/10.1002/aelm.202400069
+
+        Ref-2: Zhang, J., Hao, Y., Zhang, J. et al. The mobility of two-dimensional electron gas in AlGaN/GaN 
+        heterostructures with varied Al content. Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008). 
+        https://doi.org/10.1007/s11432-008-0056-7
+        
+        Ref-3: Mondal et. al., TBA
+            
+        The considered scattering mechanism are:
+            Interface roughness mediated (IRF)
+            Threading dislocation mediated (DIS)
+            Alloy disorder limited (AD)
+            Deformation potential mediated (DP)
+            Piezoelectric effect (PE)
+            Acoustic phonon (AP)
+            Polar optical phonon (POP)
+        """
+        #mobility_model=self.mobility_model_
         inv_sc = 0
         if alloy_disordered_effect: inv_sc += self._inv_tau_ado()
             

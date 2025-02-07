@@ -39,6 +39,30 @@ class _GeneratePlots:
 
     def _save_figure(self,fig_name, savefig:bool=True, show_plot:bool=True,
                      fig=None, CountFig=None, **kwargs_savefig):
+        """
+        The function saves the matplotlib figure.
+
+        Parameters
+        ----------
+        fig_name : str
+            name of the figure to use including figure extension.
+        savefig : bool, optional
+            Save the figure or not. The default is True.
+        show_plot : bool, optional
+            Show the plot or not. The default is True.
+        fig : matplotlib figure instance, optional
+            matplotlib figure instance. The default is None.
+        CountFig : int, optional
+            Figure count/index. The default is None.
+        **kwargs_savefig : matplotlib savefig kwargs
+            Any other matplotlib savefig keywords arguments.
+
+        Returns
+        -------
+        CountFig : int
+            Figure count/index.
+
+        """
         if not savefig: 
             if show_plot: plt.show()
             return CountFig
@@ -56,5 +80,29 @@ class _GeneratePlots:
 
     def save_figure(self,fig_name, savefig:bool=True, show_plot:bool=True,
                      fig=None, CountFig=None, **kwargs_savefig):
+        """
+        The function saves the matplotlib figure.
+
+        Parameters
+        ----------
+        fig_name : str
+            name of the figure to use including figure extension.
+        savefig : bool, optional
+            Save the figure or not. The default is True.
+        show_plot : bool, optional
+            Show the plot or not. The default is True.
+        fig : matplotlib figure instance, optional
+            matplotlib figure instance. The default is None.
+        CountFig : int, optional
+            Figure count/index. The default is None.
+        **kwargs_savefig : matplotlib savefig kwargs
+            Any other matplotlib savefig keywords arguments.
+
+        Returns
+        -------
+        CountFig : int
+            Figure count/index.
+
+        """
         return self._save_figure(fig_name, savefig=savefig, show_plot=show_plot,
                                  fig=fig, CountFig=CountFig, **kwargs_savefig)

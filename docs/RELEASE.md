@@ -1,4 +1,9 @@
-__Latest release: v0.0.4__
+__Latest release: v1.0.0__
+
+__v1.0.0__
+
+* Documentations added
+* Package released
 
 __v0.0.4__
 

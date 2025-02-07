@@ -3,16 +3,98 @@ from .utilities import _plot_mobilities
 
 ## ==============================================================================
 class AlloyParams(_AlloyParams):
+    '''
+    The functions in this class calculates the parameters for alloy from their
+    binary components.
+    '''
     def __init__(self):
         pass
             
     def get_alloy_params(self, system='ternary', compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN'):
+        """
+        This function calculates the parameters for a ternary alloy from its
+        binary component parameters using quadratic interpolation.
+        E.g. for any parameter, P:
+            P_SixGe1-x = x*P_Si + (1-x)*P_Ge + x*(1-x)*P_bowing 
+            P_bowing is the quadratic bowing parameter for the parameter P.
+
+        Parameters
+        ----------
+        system : string (case sensitive), optional
+            Type of the alloy. E.g. 'ternary'. 
+            The default is 'ternary'.
+        compositions : 1D array of float, optional
+            The alloy mole fractions. E.g. x values in Si_xGe_1-x. The default is None.
+            If None, a composition array is generated using `np.linspace(start=0.01, end=0.99, num=101)`.
+        binaries : list of strings (case sensitive), optional
+            Name of the corresponding binaries of requested alloy. They should
+            match the names in database. All implemented materials name list 
+            can be found in the README. 
+            The default is ['AlN', 'GaN'].
+        alloy : string (case sensitive), optional
+            The alloy name. The name should match the name in database. All   
+            implemented materials name list can be found in the README. Case sensitive.
+            The default is 'AlGaN'.
+
+        Returns
+        -------
+        1D float array
+            Parameters for alloy.
+
+        """
         _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, alloy=alloy)
         return self._get_alloy_params(system=system)
 
 class Mobility2DCarrier(_Mobility2DCarrier):
+    """
+    The functions in this class calculates the mobility of 2D carrier gas.  
+    The mobility models are implemented based on the following references.
+    
+    Ref-1: J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, 
+    S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, 
+    Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High 
+    Temperature Stability of Electron Mobility. Adv. Electron. Mater. 2024, 2400069. 
+    https://doi.org/10.1002/aelm.202400069
+
+    Ref-2: Zhang, J., Hao, Y., Zhang, J. et al. The mobility of two-dimensional electron gas in AlGaN/GaN 
+    heterostructures with varied Al content. Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008). 
+    https://doi.org/10.1007/s11432-008-0056-7
+    
+    Ref-3: Mondal et. al., TBA
+    """
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
                  system='ternary', eps_n_2d=1e-10, print_log=None):
+        """
+        Initiation function of the class Mobility2DCarrier.
+        
+        Parameters
+        ----------
+        compositions : 1D array of float, optional
+            The alloy mole fractions. E.g. x values in Si_xGe_1-x. The default is None.
+            If None, a composition array is generated using `np.linspace(start=0.01, end=0.99, num=101)`.
+        binaries : list of strings (case sensitive), optional
+            Name of the corresponding binaries of requested alloy. They should
+            match the names in database. All implemented materials name list 
+            can be found in the README. 
+            The default is ['AlN', 'GaN'].
+        alloy : string (case sensitive), optional
+            The alloy name. The name should match the name in database. All   
+            implemented materials name list can be found in the README. Case sensitive.
+            The default is 'AlGaN'.
+        system : string (case sensitive), optional
+            Type of the alloy. E.g. 'ternary'. 
+            The default is 'ternary'.
+        eps_n_2d : float, optional
+            Carrier density below eps_n_2d will be considered as zero. 
+            The default is 1e-10.
+        print_log : string, optional => ['high','medium','low', None]
+            Determines the level of log to be printed. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
         _Mobility2DCarrier.__init__(self, compositions=compositions, binaries=binaries, 
                                     alloy=alloy, system=system, print_log=print_log, eps_n_2d=eps_n_2d)
         
@@ -27,10 +109,105 @@ class Mobility2DCarrier(_Mobility2DCarrier):
                                  total_mobility:bool=True,
                                  calculate_total_mobility_only:bool=False,
                                  mobility_model='Bassaler'):
-        '''
+        """
+        This function calculates the sheet mobility from different scattering contributions.
+        The mobility models are implemented based on the following references.
+        
+        Ref-1: J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, 
+        S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, 
+        Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High 
+        Temperature Stability of Electron Mobility. Adv. Electron. Mater. 2024, 2400069. 
+        https://doi.org/10.1002/aelm.202400069
+
+        Ref-2: Zhang, J., Hao, Y., Zhang, J. et al. The mobility of two-dimensional electron gas in AlGaN/GaN 
+        heterostructures with varied Al content. Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008). 
+        https://doi.org/10.1007/s11432-008-0056-7
+        
+        Ref-3: Mondal et. al., TBA
+            
+        The considered scattering mechanism are:
+            Interface roughness mediated (IRF)
+            Threading dislocation mediated (DIS)
+            Alloy disorder limited (AD)
+            Deformation potential mediated (DP)
+            Piezoelectric effect (PE)
+            Acoustic phonon (AP)
+            Polar optical phonon (POP)
+        
+        Units:
+        c_lattice => in nm
+        a_lattice => in nm
+        sc_potential => in eV
+        n_2d => in nm^-2
+        rms_roughness => nm^-1
+        corr_len => nm^-1
+        n_dis => nm^-2
+        f_dis => unit less
+        E_pop => eV
+
+        Parameters
+        ----------
+        n_2d : 1D float array or float (nm^-2)
+            Array containing carrier density data for compositions. This can be
+            a single number as well. Then all compositions will have same carrier
+            density.
+        rms_roughness : float, optional (nm^-1)
+            Interface root-mean-squared roughness for interface-roughness scattering
+            contribution. The default is 0.1.
+        corr_len : float, optional (nm^-1)
+            Correlation length of interface roughness. The default is 1.
+        n_dis : float, optional (nm^-2)
+            Threading dislocation density. The default is 1.
+        f_dis : float, optional
+            Fraction of dislocation that contributes in scattering. 
+            The default is 0.1.
+        T : float, optional (K)
+            Temperature at which mobility calculations will be done. 
+            The default is 300K.
+        alloy_disordered_effect : bool, optional
+            Whether to calculate alloy disordered mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. The default is False.
+        interface_roughness_effect : bool, optional
+            Whether to calculate interface roughness effect mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. The default is False.
+        dislocation_effect : bool, optional
+            Whether to calculate interface roughness effect mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. The default is False.
+        deformation_potential_effect : bool, optional
+            Whether to calculate deformation potential effect mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. The default is False.
+        piezoelectric_effect : bool, optional
+            Whether to calculate piezoelectric effect mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. The default is False.
+        acoustic_phonon_effect : bool, optional
+            Whether to calculate acoustic phonon effect mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. The default is False.
+        polar_optical_phonon_effect : bool, optional
+            Whether to calculate polar optical phonon effect mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. The default is False.
+        total_mobility : bool, optional
+           Whether to calculate total mobility. The default is True.
         calculate_total_mobility_only : 
             Calculate only the total mobility. If False the return data also contains individual 
             specified contributions.
+        mobility_model : str, optional
+            Which mobility model to use. The default is 'Bassaler'.
+            The mobility is implemented based on following publications:
+            'Bassaler':
+                J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, 
+                S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, 
+                Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High 
+                Temperature Stability of Electron Mobility. Adv. Electron. Mater. 2024, 2400069. 
+                https://doi.org/10.1002/aelm.202400069
+
+        Returns
+        -------
+        pandas dataframe with compositions and mobility columns.
+            Total (or individual contributions) sheet mobility .
+
+        """
+        '''
+        
         '''
         self.alloy_disordered_effect_=alloy_disordered_effect
         self.interface_roughness_effect_=interface_roughness_effect
@@ -47,21 +224,105 @@ class Mobility2DCarrier(_Mobility2DCarrier):
                                               f_dis=f_dis, T=T)
 
     def calculate_sheet_resitance(self, n_2d, mobility):
+        """
+        This function calculates the sheet resistance.
+        
+        Units:
+        n_2d => in nm^-2
+        e => 1.602176634e-19 C
+        mobility (mu) => cm^2 V^-1 s^-1
+        
+        1 coulomb/volt = 1 second/ohm
+        1 ohm = 1 C^-1.V.s
+
+        R = 1/(e * n_2d * mu) ohm/square
+          = 1/(1.602176634e-19*1e14 *n_2d * mu C.cm^-2.cm^2.V^-1.S^-1) 
+          = 62415.09074/(n_2d * mu) ohm/square
+
+        Parameters
+        ----------
+        n_2d : 1D float array (nm^-2)
+            Array containing carrier density data for compositions. This can be
+            a single number as well. Then all compositions will have same carrier
+            density.
+        mobility : 1D float array (cm^2 V^-1 s^-1)
+            Array containing mobility data for compositions.
+
+        Returns
+        -------
+        1D float array (ohm/square)
+            Sheet resistance for compositions.
+
+        """
         return self._calculate_sheet_resitance(n_2d, mobility)
 
     def calculate_figure_of_merit(self, n_2d, mobility, temp:float=300,
                                    mode:str='LFOM', T_corect_bandgap:bool=False, 
                                    direct_bandgap:bool=True, indirect_bandgap:bool=False):
+        """
+        This function calculates the figure-of-merit (FOM). Available FOMs are
+        LFOM: Lateral figure-of-merit
+        
+        Ref: J. L. Hudgins, G. S. Simin, E. Santi and M. A. Khan, 
+        "An assessment of wide bandgap semiconductors for power devices," 
+        in IEEE Transactions on Power Electronics, vol. 18, no. 3, pp. 907-914, 
+        May 2003, doi: 10.1109/TPEL.2003.810840.
+        
+        direct_bandgap_critical_electric_field = 1.73e5*(bandgap_**2.5) # V/cm
+        indirect_bandgap_critical_electric_field = 2.38e5*(bandgap_**2.5) # V/cm
+        
+        Units:
+        bandgap_ => in eV.
+        temp => in K
+        n_2d => in nm^-2
+        E_cr => in V/cm
+        e => 1.602176634e-19 C
+        mobility (mu) => cm^2 V^-1 s^-1
+        
+        
+        LFOM = e*n_2d*mu*E_cr^2 = 1.602e-19 C * 1e14 cm^-2 * cm^2 V^-1 s^-1 * V^2cm^-2
+                                = 1.602e-5 CVs^-1cm^-2
+                                = 1.602e-5 Wcm^-2    #1 watts = 1 coulombs*volt/second
+                                = 1.602e-11 MW/cm^2
+        
+        Parameters
+        ----------
+        n_2d : 1D float array (nm^-2)
+            Array containing carrier density data for compositions. This can be
+            a single number as well. Then all compositions will have same carrier
+            density.
+        mobility : 1D float array (cm^2 V^-1 s^-1)
+            Array containing mobility data for compositions.
+        temp : float, optional (K)
+            Temperature for band gap correction. The default is 300K.
+        mode : str, optional (['LFOM'])
+            The figure-of-merit name. The default is 'LFOM'.
+        T_corect_bandgap : bool, optional
+            Apply temperature correction to bandgap or not. The default is False.
+        direct_bandgap : bool, optional
+            If the bandgap is direct bandgap or not. The default is True.
+        indirect_bandgap : bool, optional
+            If the bandgap is indirect bandgap or not.. The default is False.
+
+        Returns
+        -------
+        1D float array (MW/cm^2)
+            Figure-of-merit.
+
+        """
         return self._calculate_figure_of_merit(n_2d, mobility, temp=temp, mode=mode,
                                                T_corect_bandgap=T_corect_bandgap,
                                                direct_bandgap=direct_bandgap, 
                                                indirect_bandgap=indirect_bandgap)
 
 
-class Plottings(_plot_mobilities):   
+class Plottings(_plot_mobilities):  
+    """
+    Plotting class for mobilitypy.
+    """
     def __init__(self, save_figure_dir='.'):
         """
-        Intializing BandUPpy Plotting class.
+        Intializing mobilitypy Plotting class.
 
         Parameters
         ----------
@@ -77,6 +338,73 @@ class Plottings(_plot_mobilities):
                 title_text:str=None, yaxis_label:str='', xaxis_label:str='', color=None, color_map='viridis', 
                 show_legend:bool=False, show_colorbar:bool=False, colorbar_label:str=None, 
                 savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):  
+        """
+        
+
+        Parameters
+        ----------
+        data2plot : 2D numpy array
+            2D numpy array with first column as x and 2nd column as y.
+        fig : matplotlib.pyplot figure instance, optional
+            Figure instance to plot on. The default is None.
+        ax : matplotlib.pyplot axis, optional
+            Figure axis to plot on. If None, new figure will be created.
+            The default is None.
+        save_file_name : str, optional
+            Name of the figure file. If None, figure will be not saved. 
+            The default is None.
+        CountFig: int, optional
+            Figure count. The default is None.
+        ymin : float, optional
+            Minimum in y. The default is None.
+        ymax : float, optional
+            Maximum in y. The default is None.
+        xmin : float, optional
+            Minimum in x. The default is None.
+        xmax : float, optional
+            Maximum in x. The default is None.
+        y_scale_log : bool, optional
+            Use log scale for y-axis. The default is True.
+        show_right_ticks : bool, optional
+            Show ticks in the right axis of the figure. the default is False.
+        title_text : str, optional
+            Title of the figure. The default is None.
+        yaxis_label : str, optional
+            Y-axis label text. The default is ''.
+        xaxis_label : str, optional
+            x-axis label text. The default is ''.
+        color : str/color, optional
+            Color of plot. The default is 'gray'.
+        color_map: str/ matplotlib colormap
+            Colormap for plot. The default is viridis.
+        show_legend : bool, optional
+            If show legend or not. The default is True.
+        show_colorbar : bool, optional
+            Plot the colorbar in the figure or not. If fig=None, this is ignored.
+            The default is False.
+        colorbar_label : str, optional
+            Colorbar label. The default is None. If None, ignored.
+        vmin, vmax : float, optional
+            vmin and vmax define the data range that the colormap covers. 
+            By default, the colormap covers the complete value range of the supplied data.
+        show_plot : bool, optional
+            To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            Save the plot or not. The default is True.
+        **kwargs_savefig : dict
+            The matplotlib keywords for savefig function.
+
+        Returns
+        -------
+        fig : matplotlib.pyplot.figure
+            Figure instance. If ax is not None previously generated/passed fig instance
+            will be returned. Return None, if no fig instance is inputed along with ax.
+        ax : Axis instance
+            Figure axis instance.
+        CountFig: int or None
+            Figure count.
+
+        """
         return self._plot(data2plot, fig=fig, ax=ax, save_file_name=save_file_name, 
                           CountFig=CountFig, ymin=ymin, ymax=ymax, xmax=xmax, xmin=xmin, 
                           y_scale_log=y_scale_log, mode='plane_2d', yaxis_label=yaxis_label, 
@@ -93,6 +421,89 @@ class Plottings(_plot_mobilities):
                                    xaxis_label:str='Composition', color=None, color_map='viridis', show_legend:bool=False, 
                                    show_right_ticks:bool=False, show_colorbar:bool=False, colorbar_label:str=None, 
                                    savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
+        """
+        This function plots the results.
+
+        Parameters
+        ----------
+        mobility_dataframe : pandas dataframe or 2d array
+            Pandas dataframe retured from mobility calculations when mode is '2d_carrier_mobility'.
+        fig : matplotlib.pyplot figure instance, optional
+            Figure instance to plot on. The default is None.
+        ax : matplotlib.pyplot axis, optional
+            Figure axis to plot on. If None, new figure will be created.
+            The default is None.
+        save_file_name : str, optional
+            Name of the figure file. If None, figure will be not saved. 
+            The default is None.
+        CountFig: int, optional
+            Figure count. The default is None.
+        ymin : float, optional
+            Minimum in y. The default is None.
+        ymax : float, optional
+            Maximum in y. The default is None.
+        xmin : float, optional
+            Minimum in x. The default is None.
+        xmax : float, optional
+            Maximum in x. The default is None.
+        y_scale_log : bool, optional
+            Use log scale for y-axis. The default is True.
+        mode : str, optional
+            Which plotting mode to use. The options are 
+            '2d_carrier_mobility': To plot 2d mobility plots
+            'plane_2d': general 2d plots.
+        mobility_model :  str, optional
+            Which mobility model used to generate results. The data structure is 
+            different for different mobility models. The default is 'Bassaler'.
+        annotate_pos : tuple, optional
+            To add annotation at position on the plot. The default is (0,0).
+        annotatetextoffset : tuple, optional
+            To offset the annotated text from the annotate position. The default is (0, -20).
+        show_right_ticks : bool, optional
+            Show ticks in the right axis of the figure. the default is False.
+        title_text : str, optional
+            Title of the figure. The default is None.
+        yaxis_label : str, optional
+            Y-axis label text. The default is 'mu (cm^2V^-1s-1$)'.
+        xaxis_label : str, optional
+            x-axis label text. The default is 'Composition'.
+        color : str/color, optional
+            Color of plot. The default is 'gray'.
+        color_map: str/ matplotlib colormap
+            Colormap for plot. The default is viridis.
+        show_legend : bool, optional
+            If show legend or not. The default is True.
+        show_colorbar : bool, optional
+            Plot the colorbar in the figure or not. If fig=None, this is ignored.
+            The default is False.
+        colorbar_label : str, optional
+            Colorbar label. The default is None. If None, ignored.
+        vmin, vmax : float, optional
+            vmin and vmax define the data range that the colormap covers. 
+            By default, the colormap covers the complete value range of the supplied data.
+        show_plot : bool, optional
+            To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            Save the plot or not. The default is True.
+        **kwargs_savefig : dict
+            The matplotlib keywords for savefig function.
+        
+        Raises
+        ------
+        ValueError
+            If plot mode is unknown.
+
+        Returns
+        -------
+        fig : matplotlib.pyplot.figure
+            Figure instance. If ax is not None previously generated/passed fig instance
+            will be returned. Return None, if no fig instance is inputed along with ax.
+        ax : Axis instance
+            Figure axis instance.
+        CountFig: int or None
+            Figure count.
+
+        """
         return self._plot(mobility_dataframe, fig=fig, ax=ax, save_file_name=save_file_name, 
                           CountFig=CountFig, ymin=ymin, ymax=ymax, xmax=xmax, xmin=xmin, 
                           annotate_pos=annotate_pos, annotatetextoffset=annotatetextoffset,
