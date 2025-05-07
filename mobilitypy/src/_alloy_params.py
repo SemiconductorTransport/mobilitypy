@@ -19,8 +19,9 @@ class _AlloyParams:
         binaries : list of strings (case sensitive), optional
             Name of the corresponding binaries of requested alloy. They should
             match the names in database. All implemented materials name list 
-            can be found in the README. 
-            The default is ['AlN', 'GaN'].
+            can be found in the README. For ternary alloy 'compositions' correspond 
+            to the 1st binary in the list; for quaternaries 1st binary is 1st composition
+            and so on (from left to right). The default is ['AlN', 'GaN'].
         alloy : string (case sensitive), optional
             The alloy name. The name should match the name in database. All   
             implemented materials name list can be found in the README. Case sensitive.

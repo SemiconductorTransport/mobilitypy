@@ -36,8 +36,9 @@ class _Mobility2DCarrier(_AlloyParams):
         binaries : list of strings (case sensitive), optional
             Name of the corresponding binaries of requested alloy. They should
             match the names in database. All implemented materials name list 
-            can be found in the README. 
-            The default is ['AlN', 'GaN'].
+            can be found in the README. For ternary alloy 'compositions' correspond 
+            to the 1st binary in the list; for quaternaries 1st binary is 1st composition
+            and so on (from left to right). The default is ['AlN', 'GaN'].
         alloy : string (case sensitive), optional
             The alloy name. The name should match the name in database. All   
             implemented materials name list can be found in the README. Case sensitive.
@@ -283,43 +284,72 @@ class _Mobility2DCarrier(_AlloyParams):
             self._print_database_params()
             # mobility unit: cm^2 V^-1 S^-1
             if self.print_info is not None: print(f'- Composition: {self.comps_[ii]:.5f}')
-
-            if not self.only_total_mobility:
-                if self.interface_roughness_effect_:
-                    if self.print_info is not None: print('\t-- Calculating interface roughness effect mobility')
-                    mobility[ii]['IFR'] = self._mobility_calculator(interface_roughness_effect=True)
-                    
+            total_inv_sc = 0
+            if self.only_total_mobility:
+                if self.print_info is not None: print('\t-- Calculating only total mobility')
+                
+                if self.alloy_disordered_effect_: total_inv_sc += self._inv_tau_ado()                   
+                if self.interface_roughness_effect_: total_inv_sc += self._inv_tau_ifr()                   
+                if self.dislocation_effect_: total_inv_sc += self._inv_tau_dis()
+                if self.polar_optical_phonon_effect_: total_inv_sc += self._inv_tau_pop()
+                if self.acoustic_phonon_effect_: # 1/tau_AP = 1/tau_DP + 1/tau_PE
+                    total_inv_sc = total_inv_sc + self._inv_tau_pe()+self._inv_tau_dp()
+                else:
+                    if self.deformation_potential_effect_: total_inv_sc += self._inv_tau_dp()
+                    if self.piezoelectric_effect_: total_inv_sc += self._inv_tau_pe()
+                mobility[ii]['TOT'] = self._mobility_calculator(total_inv_sc)
+            else:
                 if self.alloy_disordered_effect_:
                     if self.print_info is not None: print('\t-- Calculating alloy-disordered mobility')
-                    mobility[ii]['AD'] = self._mobility_calculator(alloy_disordered_effect=True)
+                    inv_sc = self._inv_tau_ado()
+                    total_inv_sc += inv_sc
+                    mobility[ii]['AD'] = self._mobility_calculator(inv_sc)
+                    
+                if self.interface_roughness_effect_:
+                    if self.print_info is not None: print('\t-- Calculating interface roughness effect mobility')
+                    inv_sc = self._inv_tau_ifr()
+                    total_inv_sc += inv_sc
+                    mobility[ii]['IFR'] = self._mobility_calculator(inv_sc)
                     
                 if self.dislocation_effect_:
                     if self.print_info is not None: print('\t-- Calculating dislocation effect mobility')
-                    mobility[ii]['DIS'] = self._mobility_calculator(dislocation_effect=True)
-                    
-                if self.deformation_potential_effect_:
-                    if self.print_info is not None: print('\t-- Calculating deformation potential effect mobility')
-                    mobility[ii]['DP'] = self._mobility_calculator(deformation_potential_effect=True)
-                    
-                if self.piezoelectric_effect_:
-                    if self.print_info is not None: print('\t-- Calculating piezoelectric effect mobility')
-                    mobility[ii]['PE'] = self._mobility_calculator(piezoelectric_effect=True)
-                    
-                if self.acoustic_phonon_effect_:
-                    if self.print_info is not None: print('\t-- Calculating acoustic effect mobility')
-                    mobility[ii]['AP'] = self._mobility_calculator(acoustic_phonon_effect=True)
+                    inv_sc = self._inv_tau_dis()
+                    total_inv_sc += inv_sc
+                    mobility[ii]['DIS'] = self._mobility_calculator(inv_sc)
                     
                 if self.polar_optical_phonon_effect_:
                     if self.print_info is not None: print('\t-- Calculating polar optical phonon effect mobility')
-                    mobility[ii]['POP'] = self._mobility_calculator(polar_optical_phonon_effect=True)
-                
-            if self.total_mobility_:
-                if self.print_info is not None: print('\t-- Calculating total mobility')
-                mobility[ii]['TOT'] = self._mobility_calculator(interface_roughness_effect=self.interface_roughness_effect_,
-                                                                dislocation_effect=self.dislocation_effect_,
-                                                                acoustic_phonon_effect=self.acoustic_phonon_effect_,
-                                                                alloy_disordered_effect=self.alloy_disordered_effect_,
-                                                                polar_optical_phonon_effect=self.polar_optical_phonon_effect_)
+                    inv_sc = self._inv_tau_pop()
+                    total_inv_sc += inv_sc
+                    mobility[ii]['POP'] = self._mobility_calculator(inv_sc)
+ 
+                if self.acoustic_phonon_effect_:
+                    inv_sc_dp = self._inv_tau_dp()
+                    inv_sc_pe = self._inv_tau_pe()
+                    if self.print_info is not None: print('\t-- Calculating acoustic effect mobility')
+                    inv_sc = inv_sc_dp + inv_sc_pe
+                    total_inv_sc += inv_sc # 1/tau_AP = 1/tau_DP + 1/tau_PE
+                    mobility[ii]['AP'] = self._mobility_calculator(inv_sc)
+                else:
+                    if self.deformation_potential_effect_:
+                        inv_sc_dp = self._inv_tau_dp()
+                        total_inv_sc += inv_sc_dp
+                    if self.piezoelectric_effect_:
+                        total_inv_sc += inv_sc_pe
+                        inv_sc_pe = self._inv_tau_pe()
+                    
+                if self.deformation_potential_effect_:
+                    if self.print_info is not None: print('\t--- Calculating deformation potential effect mobility')
+                    mobility[ii]['DP'] = self._mobility_calculator(inv_sc_dp)
+                    
+                if self.piezoelectric_effect_:
+                    if self.print_info is not None: print('\t--- Calculating piezoelectric effect mobility')
+                    mobility[ii]['PE'] = self._mobility_calculator(inv_sc_pe)
+ 
+                if self.total_mobility_:
+                    if self.print_info is not None: print('\t-- Calculating total mobility')
+                    mobility[ii]['TOT'] = self._mobility_calculator(total_inv_sc)
+                    
             if self.print_info is not None: print(f'{"="*72}')
         return pd.DataFrame.from_dict(mobility, orient='index')
         
@@ -445,12 +475,13 @@ class _Mobility2DCarrier(_AlloyParams):
         return sc.integrate.quad(self._inv_tau_dis_f, 0, 1)[0]
 
     def _inv_tau_dis(self):
+        if self.n_2d_ < self.eps_n_2d: return 0
         fact_2 = self.n_dislocation_ * self.f_dislocation_**2 / (4*pi_* self.k_F**4 * self.c_lp**2)
         return self.fact_1 * fact_2 * self._inv_tau_dis_int()
 
     # ----------- alloy disordered -------------------
     def _inv_tau_ado(self):
-        if self.n_2d_ < self.eps_n_2d: return 0
+        if (self.comp_ < 1e-8) or (self.n_2d_ < self.eps_n_2d) or ((1-self.comp_)<1e-8): return 0
         fact_2 = self.m_star_ * self.omega * self.sc_potential_**2 * self.comp_ * (1-self.comp_) * self.b_
         #print(fact_alloy, self.m_star_ ,self.omega ,self.sc_potential_, self.comp_ ,self.b_)
         return fact_alloy * fact_2
@@ -489,55 +520,11 @@ class _Mobility2DCarrier(_AlloyParams):
         #print(yy, fact_3, fact_pop * fact_2 * fact_3)
         return fact_pop * fact_2 * fact_3 
 
-    # ----------- total mobility -------------------
-    def _mobility_calculator(self, alloy_disordered_effect:bool=False,
-                             interface_roughness_effect:bool=False,
-                             dislocation_effect:bool=False, 
-                             deformation_potential_effect:bool=False, 
-                             piezoelectric_effect:bool=False, 
-                             acoustic_phonon_effect:bool=False, 
-                             polar_optical_phonon_effect:bool=False):
+    # Scattering rate to mobility calculation
+    def _mobility_calculator(self, inverse_scattering):  
         """
         This function calculates the sheet mobility from different scattering contributions.
-        The mobility models are implemented based on the following references.
-        
-        Ref-1: J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, 
-        S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, 
-        Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High 
-        Temperature Stability of Electron Mobility. Adv. Electron. Mater. 2024, 2400069. 
-        https://doi.org/10.1002/aelm.202400069
-
-        Ref-2: Zhang, J., Hao, Y., Zhang, J. et al. The mobility of two-dimensional electron gas in AlGaN/GaN 
-        heterostructures with varied Al content. Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008). 
-        https://doi.org/10.1007/s11432-008-0056-7
-        
-        Ref-3: Mondal et. al., TBA
-            
-        The considered scattering mechanism are:
-            Interface roughness mediated (IRF)
-            Threading dislocation mediated (DIS)
-            Alloy disorder limited (AD)
-            Deformation potential mediated (DP)
-            Piezoelectric effect (PE)
-            Acoustic phonon (AP)
-            Polar optical phonon (POP)
         """
-        #mobility_model=self.mobility_model_
-        inv_sc = 0
-        if alloy_disordered_effect: inv_sc += self._inv_tau_ado()
-            
-        if interface_roughness_effect: inv_sc += self._inv_tau_ifr()
-            
-        if dislocation_effect: inv_sc += self._inv_tau_dis()
-
-        if deformation_potential_effect: inv_sc += self._inv_tau_dp()
-
-        if piezoelectric_effect: inv_sc += self._inv_tau_pe()
-
-        if acoustic_phonon_effect: inv_sc = inv_sc + self._inv_tau_pe() + self._inv_tau_dp()
-
-        if polar_optical_phonon_effect: inv_sc += self._inv_tau_pop()
-            
         # 1e4 is unit conversion from m^2 to cm^2
         # unit: cm^2 V^-1 S^-1
-        return 1e4/(self.m0_by_e_ * inv_sc) if inv_sc else np.nan
+        return 1e4/(self.m0_by_e_ * inverse_scattering) if inverse_scattering else np.nan
