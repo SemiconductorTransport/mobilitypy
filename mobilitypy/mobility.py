@@ -1,5 +1,6 @@
 from .src import _Mobility2DCarrier, _AlloyParams
 from .utilities import _plot_mobilities
+import numpy as np
 
 ## ==============================================================================
 class AlloyParams(_AlloyParams):
@@ -108,6 +109,7 @@ class Mobility2DCarrier(_Mobility2DCarrier):
                                  polar_optical_phonon_effect:bool=False,
                                  total_mobility:bool=True,
                                  calculate_total_mobility_only:bool=False,
+                                 return_sc_rates:bool=False,
                                  mobility_model='Bassaler'):
         """
         This function calculates the sheet mobility from different scattering contributions.
@@ -190,6 +192,8 @@ class Mobility2DCarrier(_Mobility2DCarrier):
         calculate_total_mobility_only : 
             Calculate only the total mobility. If False the return data also contains individual 
             specified contributions.
+        return_sc_rates : float, optional 
+            Return the scattering rates values.The default is False.
         mobility_model : str, optional
             Which mobility model to use. The default is 'Bassaler'.
             The mobility is implemented based on following publications:
@@ -203,7 +207,8 @@ class Mobility2DCarrier(_Mobility2DCarrier):
         Returns
         -------
         pandas dataframe with compositions and mobility columns.
-            Total (or individual contributions) sheet mobility .
+            Total (or individual contributions) sheet mobility. If return_sc_rates=True,
+            then scattering rates are also returned.
 
         """
         '''
@@ -220,8 +225,34 @@ class Mobility2DCarrier(_Mobility2DCarrier):
         self.total_mobility_=total_mobility
         self.mobility_model_=mobility_model
         return self._calculate_sheet_mobility(n_2d=n_2d, rms_roughness=rms_roughness, 
-                                              corr_len=corr_len, n_dis=n_dis, 
-                                              f_dis=f_dis, T=T)
+                                              corr_len=corr_len, n_dis=n_dis, f_dis=f_dis, 
+                                              T=T, return_sc_rates=return_sc_rates)
+    @staticmethod
+    def sc_rate_2_mobility(mstar0_by_e, inverse_scattering):
+        # Scattering rate to mobility calculation 
+        """
+        This function calculates sheet mobility from scattering rate.
+        
+        Parameters
+        ----------
+        mstar0_by_e : float/array
+            Carrier effective mass in m0 unit multiplied by m0_by_e. 
+            mstar0_by_e = m* X m0 / e
+        inverse_scattering : float/array
+            Scattering rate. 
+
+        Returns
+        -------
+        float/array
+            Total (or individual contributions) sheet mobility. 
+
+        """
+        # Scattering rate to mobility calculation
+        # 1e4 is unit conversion from m^2 to cm^2
+        # unit: cm^2 V^-1 S^-1
+        tau = mstar0_by_e * inverse_scattering
+        tau[tau<1e-30] = np.nan
+        return 1e4/tau
 
     def calculate_sheet_resitance(self, n_2d, mobility):
         """
@@ -333,9 +364,10 @@ class Plottings(_plot_mobilities):
         self.save_figure_directory = save_figure_dir
         _plot_mobilities.__init__(self, save_figure_dir=self.save_figure_directory)
 
-    def plot_2d(self, data2plot, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None,
-                ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, show_right_ticks:bool=False,
-                title_text:str=None, yaxis_label:str='', xaxis_label:str='', color=None, color_map='viridis', 
+    def plot_2d(self, data2plot, fig=None, ax=None, save_file_name=None, CountFig=None, 
+                ymin=None, ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, 
+                show_right_ticks:bool=False, title_text:str=None, yaxis_label:str='', 
+                xaxis_label:str='', color=None, color_map='viridis', ls_2d='-', 
                 show_legend:bool=False, show_colorbar:bool=False, colorbar_label:str=None, 
                 savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):  
         """
@@ -377,6 +409,8 @@ class Plottings(_plot_mobilities):
             Color of plot. The default is 'gray'.
         color_map: str/ matplotlib colormap
             Colormap for plot. The default is viridis.
+        ls_2d : matplotlib line style, optional
+            Matplotlib line style. The default is '-'.
         show_legend : bool, optional
             If show legend or not. The default is True.
         show_colorbar : bool, optional
@@ -410,7 +444,7 @@ class Plottings(_plot_mobilities):
                           y_scale_log=y_scale_log, mode='plane_2d', yaxis_label=yaxis_label, 
                           title_text=title_text, xaxis_label=xaxis_label, color=color, 
                           show_right_ticks=show_right_ticks, show_legend=show_legend, 
-                          color_map=color_map, show_colorbar=show_colorbar, 
+                          ls_2d=ls_2d, color_map=color_map, show_colorbar=show_colorbar, 
                           colorbar_label=colorbar_label, savefig=savefig,
                           vmin=vmin, vmax=vmax, show_plot=show_plot, **kwargs_savefig)
     

@@ -65,7 +65,8 @@ class _Mobility2DCarrier(_AlloyParams):
         _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, alloy=alloy)
         self._get_alloy_params(system=system)
 
-    def _calculate_sheet_resitance(self, n_2d, mobility):
+    @staticmethod
+    def _calculate_sheet_resitance(n_2d, mobility):
         """
         This function calculates the sheet resistance.
         
@@ -98,7 +99,8 @@ class _Mobility2DCarrier(_AlloyParams):
         """
         return 62415.09074/(n_2d * mobility)
 
-    def _apply_Varshni_T_correction_2_bandgap(self, bandgap_0, temp:float=300, 
+    @staticmethod
+    def _apply_Varshni_T_correction_2_bandgap(bandgap_0, temp:float=300, 
                                               bandgap_alpha:float=0, bandgap_beta:float=0):
         """
         This functions applies Varshni's formula for temperature correction to band gap.
@@ -194,7 +196,8 @@ class _Mobility2DCarrier(_AlloyParams):
         if mode == 'LFOM': #unit: MW/cm^2
             return 1.602176634e-11 * n_2d * mobility * critical_electric_field * critical_electric_field
         
-    def _calculate_sheet_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, n_dis=1, f_dis=0.1, T=300):
+    def _calculate_sheet_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, 
+                                  n_dis=1, f_dis=0.1, T=300, return_sc_rates:bool=False):
         """
         This function calculates the sheet mobility from different scattering contributions.
         The mobility models are implemented based on the following references.
@@ -250,11 +253,14 @@ class _Mobility2DCarrier(_AlloyParams):
         T : float, optional (K)
             Temperature at which mobility calculations will be done. 
             The default is 300K.
+        return_sc_rates : float, optional 
+            Return the scattering rates values.The default is False.
 
         Returns
         -------
         pandas dataframe of compositions and mobilities
-            Total (or individual contributions) sheet mobility .
+            Total (or individual contributions) sheet mobility. If return_sc_rates=True,
+            then scattering rates are also returned.
 
         """
         e_effective_mass = self.alloy_params_.get('e_effective_mass') 
@@ -284,6 +290,9 @@ class _Mobility2DCarrier(_AlloyParams):
             self._print_database_params()
             # mobility unit: cm^2 V^-1 S^-1
             if self.print_info is not None: print(f'- Composition: {self.comps_[ii]:.5f}')
+            
+            if return_sc_rates: mobility[ii]['m0_by_e'] = self.m0_by_e_
+                
             total_inv_sc = 0
             if self.only_total_mobility:
                 if self.print_info is not None: print('\t-- Calculating only total mobility')
@@ -297,31 +306,36 @@ class _Mobility2DCarrier(_AlloyParams):
                 else:
                     if self.deformation_potential_effect_: total_inv_sc += self._inv_tau_dp()
                     if self.piezoelectric_effect_: total_inv_sc += self._inv_tau_pe()
-                mobility[ii]['TOT'] = self._mobility_calculator(total_inv_sc)
+                mobility[ii]['TOT'] = self._mobility_calculator(total_inv_sc) 
+                if return_sc_rates: mobility[ii]['TOT_sc'] = total_inv_sc
             else:
                 if self.alloy_disordered_effect_:
                     if self.print_info is not None: print('\t-- Calculating alloy-disordered mobility')
                     inv_sc = self._inv_tau_ado()
                     total_inv_sc += inv_sc
                     mobility[ii]['AD'] = self._mobility_calculator(inv_sc)
+                    if return_sc_rates: mobility[ii]['AD_sc'] = inv_sc
                     
                 if self.interface_roughness_effect_:
                     if self.print_info is not None: print('\t-- Calculating interface roughness effect mobility')
                     inv_sc = self._inv_tau_ifr()
                     total_inv_sc += inv_sc
                     mobility[ii]['IFR'] = self._mobility_calculator(inv_sc)
+                    if return_sc_rates: mobility[ii]['IFR_sc'] = inv_sc
                     
                 if self.dislocation_effect_:
                     if self.print_info is not None: print('\t-- Calculating dislocation effect mobility')
                     inv_sc = self._inv_tau_dis()
                     total_inv_sc += inv_sc
                     mobility[ii]['DIS'] = self._mobility_calculator(inv_sc)
+                    if return_sc_rates: mobility[ii]['DIS_sc'] = inv_sc
                     
                 if self.polar_optical_phonon_effect_:
                     if self.print_info is not None: print('\t-- Calculating polar optical phonon effect mobility')
                     inv_sc = self._inv_tau_pop()
                     total_inv_sc += inv_sc
                     mobility[ii]['POP'] = self._mobility_calculator(inv_sc)
+                    if return_sc_rates: mobility[ii]['POP_sc'] = inv_sc
  
                 if self.acoustic_phonon_effect_:
                     inv_sc_dp = self._inv_tau_dp()
@@ -330,6 +344,7 @@ class _Mobility2DCarrier(_AlloyParams):
                     inv_sc = inv_sc_dp + inv_sc_pe
                     total_inv_sc += inv_sc # 1/tau_AP = 1/tau_DP + 1/tau_PE
                     mobility[ii]['AP'] = self._mobility_calculator(inv_sc)
+                    if return_sc_rates: mobility[ii]['AP_sc'] = inv_sc
                 else:
                     if self.deformation_potential_effect_:
                         inv_sc_dp = self._inv_tau_dp()
@@ -341,14 +356,17 @@ class _Mobility2DCarrier(_AlloyParams):
                 if self.deformation_potential_effect_:
                     if self.print_info is not None: print('\t--- Calculating deformation potential effect mobility')
                     mobility[ii]['DP'] = self._mobility_calculator(inv_sc_dp)
+                    if return_sc_rates: mobility[ii]['DP_sc'] = inv_sc_dp
                     
                 if self.piezoelectric_effect_:
                     if self.print_info is not None: print('\t--- Calculating piezoelectric effect mobility')
                     mobility[ii]['PE'] = self._mobility_calculator(inv_sc_pe)
+                    if return_sc_rates: mobility[ii]['PE_sc'] = inv_sc_pe
  
                 if self.total_mobility_:
                     if self.print_info is not None: print('\t-- Calculating total mobility')
                     mobility[ii]['TOT'] = self._mobility_calculator(total_inv_sc)
+                    if return_sc_rates: mobility[ii]['TOT_sc'] = total_inv_sc
                     
             if self.print_info is not None: print(f'{"="*72}')
         return pd.DataFrame.from_dict(mobility, orient='index')

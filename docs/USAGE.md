@@ -49,7 +49,8 @@ mobility_ref = mu2deg.calculate_sheet_mobility(n_2d=density_2deg_comp_ref, rms_r
                                                polar_optical_phonon_effect=polar_optical_phonon_effect,
                                                total_mobility=total_mobility,
                                                calculate_total_mobility_only=False,
-                                               mobility_model=mobility_model)
+                                               mobility_model=mobility_model,
+                                               return_sc_rates=False)
 
 ```
 

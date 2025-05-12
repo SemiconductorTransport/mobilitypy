@@ -79,8 +79,9 @@ mobilitypy package:
         1.1 get_alloy_params()
     2. Mobility2DCarrier class
         2.1 calculate_sheet_mobility()
-        2.2 calculate_sheet_resitance()
-        2.3 calculate_figure_of_merit()
+        2.2 sc_rate_2_mobility()
+        2.3 calculate_sheet_resitance()
+        2.4 calculate_figure_of_merit()
     3. Plottings class
         3.1 plot_2d_carrier_mobilities()
         3.2 plot_2d()
@@ -112,8 +113,8 @@ If you use `mobilitypy` in your work, please:
 
         *  The analytical mobility models are implemented based on the following publications:
 >> 1. J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High Temperature Stability of Electron Mobility. [Adv. Electron. Mater. 2024, 2400069.](https://doi.org/10.1002/aelm.202400069)
->> 2. Zhang, J., Hao, Y., Zhang, J. et al. The mobility of two-dimensional electron gas in AlGaN/GaN heterostructures with varied Al content. [Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008).](https://doi.org/10.1007/s11432-008-0056-7)
->> 3. Mondal et. al., TBA
+>> 2. J. Zhang, Y. Hao, J. Zhang, J. Ni, The mobility of two-dimensional electron gas in AlGaN/GaN heterostructures with varied Al content. [Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008).](https://doi.org/10.1007/s11432-008-0056-7)
+>> 3. B. Mondal, P. Pampili, J. Mukherjee, D. Moran, P.J. Parbrook, S. Schulz, Interplay of carrier density and mobility in Al-rich (Al,Ga)N-channel HEMTs: Impact on high-power device performance potential. [preprint arXiv:2502.13809](https://doi.org/10.48550/arXiv.2502.13809)
 
 __2DEG mobility analytical models:__ [Mobility2DEGAnalyticalModels.pdf](docs/Mobility2DEGAnalyticalModels.pdf)
 
