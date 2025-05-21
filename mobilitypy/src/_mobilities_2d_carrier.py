@@ -228,8 +228,8 @@ class _Mobility2DCarrier(_AlloyParams):
         a_lattice => in nm
         sc_potential => in eV
         n_2d => in nm^-2
-        rms_roughness => nm^-1
-        corr_len => nm^-1
+        rms_roughness => nm
+        corr_len => nm
         n_dis => nm^-2
         f_dis => unit less
         E_pop => eV
@@ -240,10 +240,10 @@ class _Mobility2DCarrier(_AlloyParams):
             Array containing carrier density data for compositions. This can be
             a single number as well. Then all compositions will have same carrier
             density.
-        rms_roughness : float, optional (nm^-1)
+        rms_roughness : float, optional (nm)
             Interface root-mean-squared roughness for interface-roughness scattering
             contribution. The default is 0.1.
-        corr_len : float, optional (nm^-1)
+        corr_len : float, optional (nm)
             Correlation length of interface roughness. The default is 1.
         n_dis : float, optional (nm^-2)
             Threading dislocation density. The default is 1.
