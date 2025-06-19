@@ -25,16 +25,16 @@ doi = {https://doi.org/10.1007/s11432-008-0056-7},
 url = {https://doi.org/10.1007/s11432-008-0056-7}
 }
 
-@article{Interplay_Mondal_preprint2025,
+@article{Interplay_Mondal_AED2025,
 author = {Mondal, Badal and Pampili, Pietro and Mukherjee, Jayjit and Moran, David and Parbrook, Peter James and Schulz, Stefan},
 title = {Interplay of carrier density and mobility in Al-rich (Al,Ga)N-channel HEMTs: Impact on high-power device performance potential},
-journal = {preprint arXiv:2502.13809},
-volume = {},
+journal = {APL Electronic Devices},
+volume = {1},
 number = {},
-pages = {},
+pages = {026117},
 year = {2025},
-doi = {https://doi.org/10.48550/arXiv.2502.13809},
-url = {https://doi.org/10.48550/arXiv.2502.13809}
+doi = {https://doi.org/10.1063/5.0277051},
+url = {https://doi.org/10.1063/5.0277051}
 }
 
 ``` 
