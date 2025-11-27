@@ -16,7 +16,7 @@ class AlloyParams(_AlloyParams):
         This function calculates the parameters for a ternary alloy from its
         binary component parameters using quadratic interpolation.
         E.g. for any parameter, P:
-            P_SixGe1-x = x*P_Si + (1-x)*P_Ge + x*(1-x)*P_bowing 
+            P_SixGe1-x = x*P_Si + (1-x)*P_Ge - x*(1-x)*P_bowing 
             P_bowing is the quadratic bowing parameter for the parameter P.
 
         Parameters
@@ -64,7 +64,8 @@ class Mobility2DCarrier(_Mobility2DCarrier):
     Ref-3: Mondal et. al., TBA
     """
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', eps_n_2d=1e-10, print_log=None):
+                 system='ternary', psedomorphic_strain=False, substrate=None,
+                 alloy_type='WZ', eps_n_2d=1e-10, print_log=None):
         """
         Initiation function of the class Mobility2DCarrier.
         
@@ -85,6 +86,22 @@ class Mobility2DCarrier(_Mobility2DCarrier):
         system : string (case sensitive), optional
             Type of the alloy. E.g. 'ternary'. 
             The default is 'ternary'.
+        psedomorphic_strain : bool, optional
+            Whether to consider pseudomorphic strain.
+            The default is False.
+        substrate : string or float (in Angstrom), optional
+            The substrate name (if string, warning: the name should be in the database) 
+            or the substrate in-plane lattice parameter (if float, Angstrom unit).
+            The default is None. Error will be raised if substrate=None and 
+            psedomorphic_strain=True.
+        alloy_type :  str, optional (case insensitive)
+            The crystal type of alloy. This will be considered when calculating
+            parameters like Poisson ratio etc.
+            Use following abbreviation name:
+                for wurtzite use 'WZ' or 'wz'.
+                for zincblende use 'ZB' or 'zb'.
+                for diamond use 'DM' or 'dm'.
+            The default is 'WZ'. 
         eps_n_2d : float, optional
             Carrier density below eps_n_2d will be considered as zero. 
             The default is 1e-10.
@@ -96,8 +113,12 @@ class Mobility2DCarrier(_Mobility2DCarrier):
         None.
 
         """
+        if (psedomorphic_strain == True) and (substrate is None):
+            raise ValueError('substrate tag can not be None when psedomorphic_strain=True.')
         _Mobility2DCarrier.__init__(self, compositions=compositions, binaries=binaries, 
-                                    alloy=alloy, system=system, print_log=print_log, eps_n_2d=eps_n_2d)
+                                    alloy=alloy, system=system, psedomorphic_strain=psedomorphic_strain, 
+                                    substrate=substrate,alloy_type=alloy_type,
+                                    print_log=print_log, eps_n_2d=eps_n_2d)
         
     def calculate_sheet_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, n_dis=1, f_dis=0.1, 
                                  T=300, alloy_disordered_effect:bool=False,

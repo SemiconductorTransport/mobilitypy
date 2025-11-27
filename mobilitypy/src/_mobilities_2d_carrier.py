@@ -24,7 +24,8 @@ class _Mobility2DCarrier(_AlloyParams):
     '''
     
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', print_log=None, eps_n_2d=1e-10):
+                 system='ternary', psedomorphic_strain=False, substrate=None, 
+                 alloy_type='WZ', print_log=None, eps_n_2d=1e-10):
         """
         Initiation function of the class _Mobility2DCarrier.
         
@@ -46,6 +47,22 @@ class _Mobility2DCarrier(_AlloyParams):
         system : string (case sensitive), optional
             Type of the alloy. E.g. 'ternary'. 
             The default is 'ternary'.
+        psedomorphic_strain : bool, optional
+            Whether to consider pseudomorphic strain.
+            The default is False.
+        substrate : string or float (in Angstrom), optional
+            The substrate name (if string, warning: the name should be in the database) 
+            or the substrate in-plane lattice parameter (if float, Angstrom unit).
+            The default is None. Error will be raised if substrate=None and 
+            psedomorphic_strain=True.
+        alloy_type :  str, optional (case insensitive)
+            The crystal type of alloy. This will be considered when calculating
+            parameters like Poisson ratio etc.
+            Use following abbreviation name:
+                for wurtzite use 'WZ' or 'wz'.
+                for zincblende use 'ZB' or 'zb'.
+                for diamond use 'DM' or 'dm'.
+            The default is 'WZ'. 
         print_log : string, optional => ['high','medium','low', None]
             Determines the level of log to be printed. The default is None.
         eps_n_2d : float, optional
@@ -61,9 +78,24 @@ class _Mobility2DCarrier(_AlloyParams):
         if self.print_info is not None: self.print_info = self.print_info.lower()
 
         self.eps_n_2d = eps_n_2d
-            
+
         _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, alloy=alloy)
         self._get_alloy_params(system=system)
+        
+        if psedomorphic_strain:
+            self.alloy_type_ = alloy_type
+            if isinstance(substrate, str):
+                substrate_params_dic = _AlloyParams._get_substrate_properties(substrate)
+                substrate_lp = substrate_params_dic.get('lattice_a0')
+            else:    
+                substrate_lp = float(substrate)
+                
+            lattice_a = self.alloy_params_.get('lattice_a0') 
+            lattice_c = self.alloy_params_.get('lattice_c0') 
+            epsilon_zz = self._get_Poisson_ratio()*((substrate_lp - lattice_a) / lattice_a)
+            # Re-populate the lattice parameters
+            self.alloy_params_['lattice_a0']  = np.array([substrate_lp]*len(lattice_a)) 
+            self.alloy_params_['lattice_c0']= lattice_c * (1.0 + epsilon_zz)
 
     @staticmethod
     def _calculate_sheet_resitance(n_2d, mobility):
@@ -273,7 +305,7 @@ class _Mobility2DCarrier(_AlloyParams):
         mass_densitty = self.alloy_params_.get('mass_density')
         deformation_pot = self.alloy_params_.get('deformation_potential')
         electromech_coupling_sqr = self.alloy_params_.get('electromechanical_coupling_const')
-        POP_energy = self.alloy_params_.get('PO_phonon_energy')
+        POP_energy = self.alloy_params_.get('PO_phonon_energy')           
 
         if isinstance(n_2d, int) or isinstance(n_2d, float):
             n_2d = [n_2d] * len(self.comps_)

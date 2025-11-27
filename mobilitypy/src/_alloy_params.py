@@ -41,7 +41,7 @@ class _AlloyParams:
         This function calculates the parameters for a ternary alloy from its
         binary component parameters using quadratic interpolation.
         E.g. for any parameter, P:
-            P_SixGe1-x = x*P_Si + (1-x)*P_Ge + x*(1-x)*P_bowing 
+            P_SixGe1-x = x*P_Si + (1-x)*P_Ge - x*(1-x)*P_bowing 
             P_bowing is the quadratic bowing parameter for the parameter P.
         Returns
         -------
@@ -80,3 +80,62 @@ class _AlloyParams:
             self.comps_ = np.array([self.comps_])
         if system == 'ternary':
             self._get_ternary_params()
+            
+    @staticmethod        
+    def _get_substrate_properties(substrate_name):
+        """
+        Generate the substrate properties for phsedomorphic strain.
+
+        Parameters
+        ----------
+        substrate_name : str
+            The name of the substrate. The name should be in the database. If 
+            the name does not exists in the database return None.
+
+        Returns
+        -------
+        Dictionary
+            The parameters of the substrate. Get from database. If substrate
+            name does not exists in the database return None.
+
+        """
+        return database.get(substrate_name)
+    
+    def _get_Poisson_ratio(self):
+        """
+        Poisson ratio.
+        
+        epsilon_yy = Poisson_ratio * epsilon_xx
+        
+        Poisson_ratio here includes 'negative' sign.
+        For WZ: Poisson_ratio = -2*C_13/C_33
+
+        Parameters
+        ----------
+        alloy_params_ : dictionary
+            The parameters dictionary for alloy.
+        alloy_type :  str, optional (case insensitive)
+            The crystal type of alloy. This will be considered when calculating
+            parameters like Poisson ratio etc.
+            Use following abbreviation name:
+                for wurtzite use 'WZ' or 'wz'.
+                for zincblende use 'ZB' or 'zb'.
+                for diamond use 'DM' or 'dm'.
+            The default is 'WZ'. 
+
+        Raises
+        ------
+        ValueError
+            If alloy type is not implemented yet.
+
+        Returns
+        -------
+        numpy array
+            Poisson ratio. 
+
+        """
+        if self.alloy_type_.lower() == 'wz':
+            # epsilon_zz = -2*C_13/C_33 * epsilon_xx
+            return -2*(self.alloy_params_.get('C_13')/self.alloy_params_.get('C_33'))
+        else:
+            raise ValueError(f'{self.alloy_type_} is not implemented yet. Contact developer.')

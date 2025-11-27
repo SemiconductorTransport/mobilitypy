@@ -20,6 +20,7 @@ TA_phonon_velocity => m/s
 deformation_potential => eV
 PO_phonon_energy => eV
 electromechanical_coupling_const => unitless
+C_ij => GPa # Ref-4
 '''
 database = {
             # ========================== Binaries =============================
@@ -39,7 +40,8 @@ database = {
              'TA_phonon_velocity': 2680,
              'deformation_potential': 8.3,
              'PO_phonon_energy': 91.2e-3,
-             'electromechanical_coupling_const': 0.045
+             'electromechanical_coupling_const': 0.045,
+             'C_11': 390, 'C_12': 145, 'C_13': 106, 'C_33': 398, 'C_44': 105
              },
            'AlN': 
             {'mass_density': 3230,
@@ -56,7 +58,8 @@ database = {
              'TA_phonon_velocity': 3700,
              'deformation_potential': 9.5,
              'PO_phonon_energy': 99.0e-3,
-             'electromechanical_coupling_const': 0.106
+             'electromechanical_coupling_const': 0.106,
+             'C_11': 396, 'C_12': 137, 'C_13': 108, 'C_33': 373, 'C_44': 116
              },
             # ========================== Ternaries ============================
             # AlGaN
@@ -75,6 +78,7 @@ database = {
              'TA_phonon_velocity': 0,
              'deformation_potential': 0,
              'PO_phonon_energy': 0,
-             'electromechanical_coupling_const': 0
+             'electromechanical_coupling_const': 0,
+             'C_11': 0, 'C_12': 0, 'C_13': 0, 'C_33': 0, 'C_44': 0
              }
             }

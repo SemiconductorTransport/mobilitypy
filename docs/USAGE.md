@@ -16,6 +16,7 @@ from mobilitypy import Plottings, PlotQuasi3DFuns
 ```
 ## Intialize the mobility class
 mu2deg = Mobility2DCarrier(compositions=0.1, binaries=['AlN', 'GaN'], alloy='AlGaN', system='ternary', 
+                           psedomorphic_strain=False, substrate=None, alloy_type='WZ',
                            print_log=None, eps_n_2d=1e-10)
                            
 ## Set parameters for mobility calculations

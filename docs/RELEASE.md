@@ -1,4 +1,8 @@
-__Latest release: v1.0.0__
+__Latest release: v1.0.1__
+
+__v1.0.1__
+
+* Added pseudomorphic_strain capability in Mobility2DCarrier function
 
 __v1.0.0__
 
