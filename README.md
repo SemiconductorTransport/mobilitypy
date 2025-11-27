@@ -29,7 +29,7 @@ __mobilitypy Contributors:__  [Contributors](https://github.com/SemiconductorTra
 
 __Contact us:__ [Email developer/maintainer team](mailto:badalmondal.chembgc@gmail.com)
 
-* If you would like to contribute to the development of `mobilitypy` or request new functionality, please get in touch with [us](mailto:badalmondal.chembgc@gmail.com) or open a pull request. We appreciate and respect our users' views and are committed to providing the best experience possible. Your feedback is highly valued. We will be happy to support your request ASAP.
+* If you would like to contribute to the development of `mobilitypy` or request new functionality, please get in touch with [us](mailto:badalmondal.chembgc@gmail.com) or open a pull request or discuss [here](https://github.com/SemiconductorTransport/mobilitypy/discussions). We appreciate and respect our users' views and are committed to providing the best experience possible. Your feedback is highly valued. We will be happy to support your request ASAP.
 
 <!-- =========================================================== -->
 
@@ -72,6 +72,8 @@ Or, without cloning
 __Wiki page__: [Welcome to mobilitypy](https://github.com/SemiconductorTransport/mobilitypy/wiki)
 
 __Documentation__: [Package documentation](https://github.com/SemiconductorTransport/mobilitypy/wiki/Package-Documentation)
+
+__Discussions__: [Discuss more about the package here](https://github.com/SemiconductorTransport/mobilitypy/discussions)
 
 __Material database__: [here](mobilitypy/src/database.py)
 
