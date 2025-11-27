@@ -69,34 +69,20 @@ Or, without cloning
 
 <!-- =========================================================== -->
 ## Usage
-__Documentation__: [here](docs/USAGE.md)
+__Wiki page__: [Welcome to mobilitypy](https://github.com/SemiconductorTransport/mobilitypy/wiki)
+
+__Documentation__: [Package documentation](https://github.com/SemiconductorTransport/mobilitypy/wiki/Package-Documentation)
+
 __Material database__: [here](mobilitypy/src/database.py)
 
-The detailed documentation is available [here](docs/USAGE.md). Explore the [tutorial](tutorials) folder for example tutorials. Below are quick snippets showcasing what you can achieve with `mobilitypy`:
-```
-mobilitypy package:
-    1. AlloyParams class
-        1.1 get_alloy_params()
-    2. Mobility2DCarrier class
-        2.1 calculate_sheet_mobility()
-        2.2 sc_rate_2_mobility()
-        2.3 calculate_sheet_resitance()
-        2.4 calculate_figure_of_merit()
-    3. Plottings class
-        3.1 plot_2d_carrier_mobilities()
-        3.2 plot_2d()
-        3.3 save_figure()
-    4. PlotQuasi3DFuns class
-        4.1 InterPolation()
-        4.2 Plotq3D()
-```
+__Tutorials__: [tutorial](tutorials)
 
 <!-- =========================================================== -->
 ## Tips and tricks:
 
-__FAQs__: [here](docs/FAQs.md)
+__FAQs__: [here](https://github.com/SemiconductorTransport/mobilitypy/wiki/Frequently-Asked-Questions-(FAQs))
 
-You can find a list of common user issues encountered while using this software [here](docs/FAQs.md). We appreciate and respect our users' views and are committed to providing the best experience possible. Your feedback is highly valued.
+You can find a list of common user issues encountered while using this software [here](https://github.com/SemiconductorTransport/mobilitypy/wiki/Frequently-Asked-Questions-(FAQs)). We appreciate and respect our users' views and are committed to providing the best experience possible. Your feedback is highly valued.
 
 <!-- =========================================================== -->
 
@@ -121,7 +107,7 @@ If you use `mobilitypy` in your work, please:
 
 __2DEG mobility analytical models:__ [Mobility2DEGAnalyticalModels.pdf](docs/Mobility2DEGAnalyticalModels.pdf)
 
-__Bibliography file:__ Here is the [bibliography file](docs/REFERENCES.md) for your convenience.
+__Bibliography file:__ Here is the [bibliography file](https://github.com/SemiconductorTransport/mobilitypy/wiki/References-(bibliography-style)) for your convenience.
 
 <!-- =========================================================== -->
 
@@ -129,7 +115,7 @@ __Bibliography file:__ Here is the [bibliography file](docs/REFERENCES.md) for y
 ## Version release
 __Latest release: v1.0.1__
 
-Chekout out [version release history here](docs/RELEASE.md) for the full list of updates and upgrades.
+Chekout out [version release history here](https://github.com/SemiconductorTransport/mobilitypy/wiki/Brief-release-history) for the full list of updates and upgrades.
 
 <!-- =========================================================== -->
 
