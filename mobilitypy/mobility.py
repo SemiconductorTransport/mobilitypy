@@ -102,9 +102,9 @@ class Mobility2DCarrier(_Mobility2DCarrier):
                 for zincblende use 'ZB' or 'zb'.
                 for diamond use 'DM' or 'dm'.
             The default is 'WZ'. 
-        eps_n_2d : float, optional
+        eps_n_2d : float, optional (in nm^-2)
             Carrier density below eps_n_2d will be considered as zero. 
-            The default is 1e-10.
+            The default is 1e-10 nm^-2 == 1e4 cm^-2.
         print_log : string, optional => ['high','medium','low', None]
             Determines the level of log to be printed. The default is None.
 

@@ -65,9 +65,9 @@ class _Mobility2DCarrier(_AlloyParams):
             The default is 'WZ'. 
         print_log : string, optional => ['high','medium','low', None]
             Determines the level of log to be printed. The default is None.
-        eps_n_2d : float, optional
+        eps_n_2d : float, optional (in nm^-2)
             Carrier density below eps_n_2d will be considered as zero. 
-            The default is 1e-10.
+            The default is 1e-10 nm^-2 == 1e4 cm^-2.
 
         Returns
         -------
