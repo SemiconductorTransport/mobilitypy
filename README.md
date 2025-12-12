@@ -115,7 +115,6 @@ __Bibliography file:__ Here is the [bibliography file](https://github.com/Semico
 
 <!-- =========================================================== -->
 ## Version release
-__Latest release: v1.0.1__
 
 Chekout out [version release history here](https://github.com/SemiconductorTransport/mobilitypy/wiki/Brief-release-history) for the full list of updates and upgrades.
 

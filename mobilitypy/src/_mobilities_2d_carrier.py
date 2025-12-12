@@ -1,11 +1,10 @@
 import numpy as np
 import pandas as pd
 import scipy as sc
-from ._alloy_params import _AlloyParams
 from ._constants import *
 
 ## ==============================================================================
-class _Mobility2DCarrier(_AlloyParams):
+class _Mobility2DCarrier:
     '''
     The functions in this class calculates the mobility of 2D carrier gas.  
     The mobility models are implemented based on the following references.
@@ -20,142 +19,21 @@ class _Mobility2DCarrier(_AlloyParams):
     heterostructures with varied Al content. Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008). 
     https://doi.org/10.1007/s11432-008-0056-7
     
-    Ref-3: Mondal et. al., TBA
+    Ref-3: Mondal et. al., Interplay of carrier density and mobility in Al-rich (Al,Ga)N-channel HEMTs: 
+    Impact on high-power device performance potential. APL Electronic Devices 1, 026117 (2025)
+    https://doi.org/10.1063/5.0277051
     '''
     
-    def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', psedomorphic_strain=False, substrate=None, 
-                 alloy_type='WZ', print_log=None, eps_n_2d=1e-10):
+    def __init__(self):
         """
         Initiation function of the class _Mobility2DCarrier.
         
-        Parameters
-        ----------
-        compositions : 1D array of float, optional
-            The alloy mole fractions. E.g. x values in Si_xGe_1-x. The default is None.
-            If None, a composition array is generated using `np.linspace(start=0.01, end=0.99, num=101)`.
-        binaries : list of strings (case sensitive), optional
-            Name of the corresponding binaries of requested alloy. They should
-            match the names in database. All implemented materials name list 
-            can be found in the README. For ternary alloy 'compositions' correspond 
-            to the 1st binary in the list; for quaternaries 1st binary is 1st composition
-            and so on (from left to right). The default is ['AlN', 'GaN'].
-        alloy : string (case sensitive), optional
-            The alloy name. The name should match the name in database. All   
-            implemented materials name list can be found in the README. Case sensitive.
-            The default is 'AlGaN'.
-        system : string (case sensitive), optional
-            Type of the alloy. E.g. 'ternary'. 
-            The default is 'ternary'.
-        psedomorphic_strain : bool, optional
-            Whether to consider pseudomorphic strain.
-            The default is False.
-        substrate : string or float (in Angstrom), optional
-            The substrate name (if string, warning: the name should be in the database) 
-            or the substrate in-plane lattice parameter (if float, Angstrom unit).
-            The default is None. Error will be raised if substrate=None and 
-            psedomorphic_strain=True.
-        alloy_type :  str, optional (case insensitive)
-            The crystal type of alloy. This will be considered when calculating
-            parameters like Poisson ratio etc.
-            Use following abbreviation name:
-                for wurtzite use 'WZ' or 'wz'.
-                for zincblende use 'ZB' or 'zb'.
-                for diamond use 'DM' or 'dm'.
-            The default is 'WZ'. 
-        print_log : string, optional => ['high','medium','low', None]
-            Determines the level of log to be printed. The default is None.
-        eps_n_2d : float, optional (in nm^-2)
-            Carrier density below eps_n_2d will be considered as zero. 
-            The default is 1e-10 nm^-2 == 1e4 cm^-2.
-
         Returns
         -------
         None.
 
         """
-        self.print_info = print_log
-        if self.print_info is not None: self.print_info = self.print_info.lower()
-
-        self.eps_n_2d = eps_n_2d
-
-        _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, alloy=alloy)
-        self._get_alloy_params(system=system)
-        
-        if psedomorphic_strain:
-            self.alloy_type_ = alloy_type
-            if isinstance(substrate, str):
-                substrate_params_dic = _AlloyParams._get_substrate_properties(substrate)
-                substrate_lp = substrate_params_dic.get('lattice_a0')
-            else:    
-                substrate_lp = float(substrate)
-                
-            lattice_a = self.alloy_params_.get('lattice_a0') 
-            lattice_c = self.alloy_params_.get('lattice_c0') 
-            epsilon_zz = self._get_Poisson_ratio()*((substrate_lp - lattice_a) / lattice_a)
-            # Re-populate the lattice parameters
-            self.alloy_params_['lattice_a0']  = np.array([substrate_lp]*len(lattice_a)) 
-            self.alloy_params_['lattice_c0']= lattice_c * (1.0 + epsilon_zz)
-
-    @staticmethod
-    def _calculate_sheet_resitance(n_2d, mobility):
-        """
-        This function calculates the sheet resistance.
-        
-        Units:
-        n_2d => in nm^-2
-        e => 1.602176634e-19 C
-        mobility (mu) => cm^2 V^-1 s^-1
-        
-        1 coulomb/volt = 1 second/ohm
-        1 ohm = 1 C^-1.V.s
-
-        R = 1/(e * n_2d * mu) ohm/square
-          = 1/(1.602176634e-19*1e14 *n_2d * mu C.cm^-2.cm^2.V^-1.S^-1) 
-          = 62415.09074/(n_2d * mu) ohm/square
-
-        Parameters
-        ----------
-        n_2d : 1D float array (nm^-2)
-            Array containing carrier density data for compositions. This can be
-            a single number as well. Then all compositions will have same carrier
-            density.
-        mobility : 1D float array (cm^2 V^-1 s^-1)
-            Array containing mobility data for compositions.
-
-        Returns
-        -------
-        1D float array (ohm/square)
-            Sheet resistance for compositions.
-
-        """
-        return 62415.09074/(n_2d * mobility)
-
-    @staticmethod
-    def _apply_Varshni_T_correction_2_bandgap(bandgap_0, temp:float=300, 
-                                              bandgap_alpha:float=0, bandgap_beta:float=0):
-        """
-        This functions applies Varshni's formula for temperature correction to band gap.
-        Eg(T) = Eg(T=0) - [aT^2/(T+b)]
-
-        Parameters
-        ----------
-        bandgap_0 : 1D float array (eV)
-            Band gap values at 0K temperature.
-        temp : float, optional (K)
-            Temperature in K. The default is 300K.
-        bandgap_alpha : float, optional (eV/K)
-            Temperature correction coefficient alpha. The default is 0.
-        bandgap_beta : float, optional (K)
-            Temperature correction coefficient beta. The default is 0.
-
-        Returns
-        -------
-        1D float array (eV)
-            The temperature corrected band gap values.
-
-        """
-        return bandgap_0 - (bandgap_alpha*temp*temp/(temp+bandgap_beta))
+        self.eps_n_2d = self.eps_n
 
     def _calculate_figure_of_merit(self, n_2d, mobility, temp:float=300, mode:str='LFOM', 
                                    T_corect_bandgap:bool=False,
@@ -188,13 +66,13 @@ class _Mobility2DCarrier(_AlloyParams):
         
         Parameters
         ----------
-        n_2d : 1D float array (nm^-2)
+        n_2d : 1D float array (unit: nm^-2)
             Array containing carrier density data for compositions. This can be
             a single number as well. Then all compositions will have same carrier
             density.
-        mobility : 1D float array (cm^2 V^-1 s^-1)
+        mobility : 1D float array (unit: cm^2 V^-1 s^-1)
             Array containing mobility data for compositions.
-        temp : float, optional (K)
+        temp : float, optional (unit: K)
             Temperature for band gap correction. The default is 300K.
         mode : str, optional (['LFOM'])
             The figure-of-merit name. The default is 'LFOM'.
@@ -207,7 +85,7 @@ class _Mobility2DCarrier(_AlloyParams):
 
         Returns
         -------
-        1D float array (MW/cm^2)
+        1D float array (unit: MW/cm^2)
             Figure-of-merit.
 
         """
@@ -244,7 +122,9 @@ class _Mobility2DCarrier(_AlloyParams):
         heterostructures with varied Al content. Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008). 
         https://doi.org/10.1007/s11432-008-0056-7
         
-        Ref-3: Mondal et. al., TBA
+        Ref-3: Mondal et. al., Interplay of carrier density and mobility in Al-rich (Al,Ga)N-channel HEMTs: 
+        Impact on high-power device performance potential. APL Electronic Devices 1, 026117 (2025)
+        https://doi.org/10.1063/5.0277051
             
         The considered scattering mechanism are:
             Interface roughness mediated (IRF)
@@ -268,21 +148,21 @@ class _Mobility2DCarrier(_AlloyParams):
 
         Parameters
         ----------
-        n_2d : 1D float array or float (nm^-2)
+        n_2d : 1D float array or float, optional (unit: nm^-2)
             Array containing carrier density data for compositions. This can be
             a single number as well. Then all compositions will have same carrier
-            density.
-        rms_roughness : float, optional (nm)
+            density. The default is 0.1
+        rms_roughness : float, optional (unit: nm)
             Interface root-mean-squared roughness for interface-roughness scattering
             contribution. The default is 0.1.
-        corr_len : float, optional (nm)
+        corr_len : float, optional (unit: nm)
             Correlation length of interface roughness. The default is 1.
-        n_dis : float, optional (nm^-2)
+        n_dis : float, optional (unit: nm^-2)
             Threading dislocation density. The default is 1.
-        f_dis : float, optional
+        f_dis : float, optional (unit: unitless)
             Fraction of dislocation that contributes in scattering. 
             The default is 0.1.
-        T : float, optional (K)
+        T : float, optional (unit: K)
             Temperature at which mobility calculations will be done. 
             The default is 300K.
         return_sc_rates : float, optional 
@@ -290,7 +170,7 @@ class _Mobility2DCarrier(_AlloyParams):
 
         Returns
         -------
-        pandas dataframe of compositions and mobilities
+        pandas dataframe of compositions and mobilities (unit: cm^2 V^-1 S^-1)
             Total (or individual contributions) sheet mobility. If return_sc_rates=True,
             then scattering rates are also returned.
 
@@ -318,7 +198,8 @@ class _Mobility2DCarrier(_AlloyParams):
                              high_frequency_dielectric_constant[ii],
                              lattice_c[ii], lattice_a[ii], sc_potential[ii], self.comps_[ii],
                              n_2d[ii], rms_roughness, corr_len, n_dis, f_dis, 
-                             T, electromech_coupling_sqr[ii], deformation_pot[ii], mass_densitty[ii], LA_velocity[ii], POP_energy[ii])
+                             T, electromech_coupling_sqr[ii], deformation_pot[ii], 
+                             mass_densitty[ii], LA_velocity[ii], POP_energy[ii])
             self._print_database_params()
             # mobility unit: cm^2 V^-1 S^-1
             if self.print_info is not None: print(f'- Composition: {self.comps_[ii]:.5f}')
@@ -409,24 +290,11 @@ class _Mobility2DCarrier(_AlloyParams):
         """
         This function sets the parameters for mobility calculations.
         """
-        self.m_star_ = m_star
-        self.eps_s_ = eps_s
-        self.eps_h_ = eps_h
-        self.c_lp = c_lattice
-        self.a_lp = a_lattice
-        self.sc_potential_ = sc_potential
+        self._set_params_general(m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
+                                 n_dis, f_dis, mass_density, v_LA, E_pop, T, K_square, 
+                                 E_D, rms_roughness, corr_len)
         self.comp_ = alloy_composition 
         self.n_2d_ = n_2d
-        self.corr_len_ = corr_len
-        self.rms_roughness_ = rms_roughness
-        self.n_dislocation_ = n_dis
-        self.f_dislocation_ = f_dis
-        self.temp_ = T
-        self.K_sqr = K_square
-        self.E_d = E_D
-        self.mass_density_ = mass_density
-        self.v_LA = v_LA
-        self.E_pop = E_pop
         self._get_derived_params()
 
     def _get_derived_params(self):
@@ -436,8 +304,6 @@ class _Mobility2DCarrier(_AlloyParams):
         self.q_TF = fact_q_TF * tmp_ # nm^-1
         self.b_ = fact_b*(self.n_2d_*tmp_)**(1/3) # nm^-1
         self.fact_1 =  fact_irf_dis * tmp_ /self.eps_s_ # s^-1
-        self.omega = 0.8660254037844386 * self.a_lp**2 * self.c_lp # sqrt(3)/2 * a^2 c => nm^3
-        self.m0_by_e_ = self.m_star_ * m0_by_e
         self.k_0 = fact_pop_k0*np.sqrt(self.m_star_*self.E_pop) # nm^-1
 
     def _print_database_params(self):
@@ -451,12 +317,7 @@ class _Mobility2DCarrier(_AlloyParams):
         """
         if self.print_info == 'high':
             print(f'- Composition={self.comp_:.5f}')
-            print(f'\t-- a={self.a_lp:.5f} nm | c={self.c_lp:.5f} nm | m*={self.m_star_:.5f} m0 | eps_s={self.eps_s_:.5f} eps0 | eps_h={self.eps_h_:.5f} eps0')
-            print(f'\t-- Mass density={self.mass_density_:.2f} | scattering potential={self.sc_potential_:.2f} eV | 2deg density={self.n_2d_:.5f} nm^-2 | T={self.temp_:.1f} K')
-            print(f'\t-- Interface rms roughness={self.rms_roughness_:.3f} nm | correlation length={self.corr_len_:.3f} nm')
-            print(f'\t-- Dislocation density={self.n_dislocation_:.4f} nm^-2 | dislocation occupancy={self.f_dislocation_:.1f}')
-            print(f'\t-- Electromechanical coupling coefficient={self.K_sqr:.5f} | deformation potential={self.E_d:.5f}')
-            print(f'\t-- Longitudinal acoustic phonon velocity={self.v_LA:.2f} m/s | polar optical phonon energy={self.E_pop:.5f} eV')
+            self._print_database_params_general()
             print(f'\t-- Fermi wave vector={self.k_F} | b={self.b_}')
             print('')
 
