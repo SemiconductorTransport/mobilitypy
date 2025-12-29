@@ -1,2 +1,0 @@
-python -m bulid
-python -m twine upload  --repository mobilitypy dist/*
