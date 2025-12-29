@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools"] #, "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -17,7 +17,7 @@ authors = [
     { name = "Badal Mondal", email = "badalmondal.chembgc@gmail.com" },
 ]
 maintainers = [
-  {name = name = "Badal Mondal", email = "badalmondal.chembgc@gmail.com" },
+  {name = "Badal Mondal", email = "badalmondal.chembgc@gmail.com" },
 ]
 description = "mobilitypy: Python package for mobility calculations in semiconductors"
 readme = "README.md"
@@ -37,6 +37,19 @@ Repository = "https://github.com/SemiconductorTransport/mobilitypy.git"
 Issues = "https://github.com/SemiconductorTransport/mobilitypy/issues"
 Changelog = "https://github.com/SemiconductorTransport/mobilitypy/wiki/Brief-release-history"
 Releasenotes = "https://github.com/SemiconductorTransport/mobilitypy/releases"
+
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mobilitypy*"]
+exclude = ["imgs", 'docs', "tutorials"]
+namespaces = false
+
+#[tool.setuptools]
+#include-package-data = true
+
+#[tool.setuptools.package-data]
+#mobilitypy = ["data/*.csv", "assets/*"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"

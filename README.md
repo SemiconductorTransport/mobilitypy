@@ -49,7 +49,7 @@ __Contact us:__ [Email developer/maintainer team](mailto:badalmondal.chembgc@gma
 ### 2. Installation using `pip` [not available yet]
 
 ```
-    TBA
+    pip install mobilitypy
 ```
 
 ### 3. Installation from github repository
