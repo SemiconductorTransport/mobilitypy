@@ -1,4 +1,4 @@
-from .src import _Mobility2DCarrier, _AlloyParams
+from .src import _AlloyParams, _MobilityCarrier, _Mobility2DCarrier, _Mobility3DCarrier 
 from .utilities import _plot_mobilities
 import numpy as np
 
@@ -46,7 +46,7 @@ class AlloyParams(_AlloyParams):
         _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, alloy=alloy)
         return self._get_alloy_params(system=system)
 
-class Mobility2DCarrier(_Mobility2DCarrier):
+class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
     """
     The functions in this class calculates the mobility of 2D carrier gas.  
     The mobility models are implemented based on the following references.
@@ -61,7 +61,9 @@ class Mobility2DCarrier(_Mobility2DCarrier):
     heterostructures with varied Al content. Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008). 
     https://doi.org/10.1007/s11432-008-0056-7
     
-    Ref-3: Mondal et. al., TBA
+    Ref-3: Mondal et. al., Interplay of carrier density and mobility in Al-rich (Al,Ga)N-channel HEMTs: 
+    Impact on high-power device performance potential. APL Electronic Devices 1, 026117 (2025)
+    https://doi.org/10.1063/5.0277051
     """
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
                  system='ternary', psedomorphic_strain=False, substrate=None,
@@ -89,7 +91,7 @@ class Mobility2DCarrier(_Mobility2DCarrier):
         psedomorphic_strain : bool, optional
             Whether to consider pseudomorphic strain.
             The default is False.
-        substrate : string or float (in Angstrom), optional
+        substrate : string or float, optional (unit: Angstrom)
             The substrate name (if string, warning: the name should be in the database) 
             or the substrate in-plane lattice parameter (if float, Angstrom unit).
             The default is None. Error will be raised if substrate=None and 
@@ -102,9 +104,9 @@ class Mobility2DCarrier(_Mobility2DCarrier):
                 for zincblende use 'ZB' or 'zb'.
                 for diamond use 'DM' or 'dm'.
             The default is 'WZ'. 
-        eps_n_2d : float, optional
+        eps_n_2d : float, optional (unit: nm^-2)
             Carrier density below eps_n_2d will be considered as zero. 
-            The default is 1e-10.
+            The default is 1e-10 nm^-2 == 1e4 cm^-2.
         print_log : string, optional => ['high','medium','low', None]
             Determines the level of log to be printed. The default is None.
 
@@ -115,10 +117,11 @@ class Mobility2DCarrier(_Mobility2DCarrier):
         """
         if (psedomorphic_strain == True) and (substrate is None):
             raise ValueError('substrate tag can not be None when psedomorphic_strain=True.')
-        _Mobility2DCarrier.__init__(self, compositions=compositions, binaries=binaries, 
-                                    alloy=alloy, system=system, psedomorphic_strain=psedomorphic_strain, 
-                                    substrate=substrate,alloy_type=alloy_type,
-                                    print_log=print_log, eps_n_2d=eps_n_2d)
+        _MobilityCarrier.__init__(self, compositions=compositions, binaries=binaries, 
+                                  alloy=alloy, system=system, psedomorphic_strain=psedomorphic_strain, 
+                                  substrate=substrate,alloy_type=alloy_type,
+                                  print_log=print_log, eps_n=eps_n_2d)
+        _Mobility2DCarrier.__init__(self)
         
     def calculate_sheet_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, n_dis=1, f_dis=0.1, 
                                  T=300, alloy_disordered_effect:bool=False,
@@ -146,7 +149,9 @@ class Mobility2DCarrier(_Mobility2DCarrier):
         heterostructures with varied Al content. Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008). 
         https://doi.org/10.1007/s11432-008-0056-7
         
-        Ref-3: Mondal et. al., TBA
+        Ref-3: Mondal et. al., Interplay of carrier density and mobility in Al-rich (Al,Ga)N-channel HEMTs: 
+        Impact on high-power device performance potential. APL Electronic Devices 1, 026117 (2025)
+        https://doi.org/10.1063/5.0277051
             
         The considered scattering mechanism are:
             Interface roughness mediated (IRF)
@@ -158,33 +163,33 @@ class Mobility2DCarrier(_Mobility2DCarrier):
             Polar optical phonon (POP)
         
         Units:
-        c_lattice => in nm
-        a_lattice => in nm
-        sc_potential => in eV
-        n_2d => in nm^-2
-        rms_roughness => nm
-        corr_len => nm
-        n_dis => nm^-2
-        f_dis => unit less
-        E_pop => eV
+            c_lattice => in nm
+            a_lattice => in nm
+            sc_potential => in eV
+            n_2d => in nm^-2
+            rms_roughness => nm
+            corr_len => nm
+            n_dis => nm^-2
+            f_dis => unit less
+            E_pop => eV
 
         Parameters
         ----------
-        n_2d : 1D float array or float (nm^-2)
+        n_2d : 1D float array or float, optional (unit: nm^-2)
             Array containing carrier density data for compositions. This can be
             a single number as well. Then all compositions will have same carrier
-            density.
-        rms_roughness : float, optional (nm)
+            density. The default is 0.1.
+        rms_roughness : float, optional (unit: nm)
             Interface root-mean-squared roughness for interface-roughness scattering
             contribution. The default is 0.1.
-        corr_len : float, optional (nm)
+        corr_len : float, optional (unit: nm)
             Correlation length of interface roughness. The default is 1.
-        n_dis : float, optional (nm^-2)
+        n_dis : float, optional (unit: nm^-2)
             Threading dislocation density. The default is 1.
-        f_dis : float, optional
+        f_dis : float, optional (unit: unitless)
             Fraction of dislocation that contributes in scattering. 
             The default is 0.1.
-        T : float, optional (K)
+        T : float, optional (unit: K)
             Temperature at which mobility calculations will be done. 
             The default is 300K.
         alloy_disordered_effect : bool, optional
@@ -227,14 +232,12 @@ class Mobility2DCarrier(_Mobility2DCarrier):
 
         Returns
         -------
-        pandas dataframe with compositions and mobility columns.
+        pandas dataframe with compositions and mobility (unit: cm^2 V^-1 S^-1) columns.
             Total (or individual contributions) sheet mobility. If return_sc_rates=True,
             then scattering rates are also returned.
 
         """
-        '''
-        
-        '''
+
         self.alloy_disordered_effect_=alloy_disordered_effect
         self.interface_roughness_effect_=interface_roughness_effect
         self.dislocation_effect_=dislocation_effect
@@ -264,7 +267,7 @@ class Mobility2DCarrier(_Mobility2DCarrier):
 
         Returns
         -------
-        float/array
+        float/array (unit: cm^2 V^-1 S^-1)
             Total (or individual contributions) sheet mobility. 
 
         """
@@ -293,16 +296,16 @@ class Mobility2DCarrier(_Mobility2DCarrier):
 
         Parameters
         ----------
-        n_2d : 1D float array (nm^-2)
+        n_2d : 1D float array (unit: nm^-2)
             Array containing carrier density data for compositions. This can be
             a single number as well. Then all compositions will have same carrier
             density.
-        mobility : 1D float array (cm^2 V^-1 s^-1)
+        mobility : 1D float array (unit: cm^2 V^-1 s^-1)
             Array containing mobility data for compositions.
 
         Returns
         -------
-        1D float array (ohm/square)
+        1D float array (unit: ohm/square)
             Sheet resistance for compositions.
 
         """
@@ -339,13 +342,13 @@ class Mobility2DCarrier(_Mobility2DCarrier):
         
         Parameters
         ----------
-        n_2d : 1D float array (nm^-2)
+        n_2d : 1D float array (unit: nm^-2)
             Array containing carrier density data for compositions. This can be
             a single number as well. Then all compositions will have same carrier
             density.
-        mobility : 1D float array (cm^2 V^-1 s^-1)
+        mobility : 1D float array (unit: cm^2 V^-1 s^-1)
             Array containing mobility data for compositions.
-        temp : float, optional (K)
+        temp : float, optional (unit: K)
             Temperature for band gap correction. The default is 300K.
         mode : str, optional (['LFOM'])
             The figure-of-merit name. The default is 'LFOM'.
@@ -358,7 +361,7 @@ class Mobility2DCarrier(_Mobility2DCarrier):
 
         Returns
         -------
-        1D float array (MW/cm^2)
+        1D float array (unit: MW/cm^2)
             Figure-of-merit.
 
         """
@@ -366,7 +369,187 @@ class Mobility2DCarrier(_Mobility2DCarrier):
                                                T_corect_bandgap=T_corect_bandgap,
                                                direct_bandgap=direct_bandgap, 
                                                indirect_bandgap=indirect_bandgap)
+    
+class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
+    """
+    The functions in this class calculates the mobility of 3D carrier gas.  
+    The mobility models are implemented based on the following references.
+    
+    Note: Some of the equations in the references has prining mistakes. The mistakes
+    are corrected in our implementation. 
+    
+    Ref-1: Rajan et al., Appl. Phys. Lett. 88, 042103 (2006) => alloy disorder, polar optical phonon
+    Ref-2: DJ. and UKM., PRB 66, 241307(R) (2002) and DJ. et al., PRB 67, 153306 (2003)  => Dislocation
+    Ref-3: Debdeep Jena's thesis, Chapter-6 APPENDIX, Sec. Three-dimensional carriers => Acoustic phonon 
+    
+    """
+    
+    def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
+                 system='ternary', psedomorphic_strain=False, substrate=None,
+                 alloy_type='WZ', eps_n_3d=1e-14, print_log=None):
+        """
+        Initialization function of the class Mobility3DCarrier.
+        
+        Parameters
+        ----------
+        compositions : 1D array of float, optional
+            The alloy mole fractions. E.g. x values in Si_xGe_1-x. The default is None.
+            If None, a composition array is generated using `np.linspace(start=0.01, end=0.99, num=101)`.
+        binaries : list of strings (case sensitive), optional
+            Name of the corresponding binaries of requested alloy. They should
+            match the names in database. All implemented materials name list 
+            can be found in the README. 
+            The default is ['AlN', 'GaN'].
+        alloy : string (case sensitive), optional
+            The alloy name. The name should match the name in database. All   
+            implemented materials name list can be found in the README. Case sensitive.
+            The default is 'AlGaN'.
+        system : string (case sensitive), optional
+            Type of the alloy. E.g. 'ternary'. 
+            The default is 'ternary'.
+        psedomorphic_strain : bool, optional
+            Whether to consider pseudomorphic strain.
+            The default is False.
+        substrate : string or float, optional (unit: Angstrom)
+            The substrate name (if string, warning: the name should be in the database) 
+            or the substrate in-plane lattice parameter (if float, Angstrom unit).
+            The default is None. Error will be raised if substrate=None and 
+            psedomorphic_strain=True.
+        alloy_type :  str, optional (case insensitive)
+            The crystal type of alloy. This will be considered when calculating
+            parameters like Poisson ratio etc.
+            Use following abbreviation name:
+                for wurtzite use 'WZ' or 'wz'.
+                for zincblende use 'ZB' or 'zb'.
+                for diamond use 'DM' or 'dm'.
+            The default is 'WZ'. 
+        eps_n_3d : float, optional (unit: 1e18 cm^-2)
+            Carrier density below eps_n_3d will be considered as zero. 
+            The default is 1e-14 1e18 cm^-2 == 1e4 cm^-2.
+        print_log : string, optional => ['high','medium','low', None]
+            Determines the level of log to be printed. The default is None.
 
+        Returns
+        -------
+        None.
+
+        """
+        if (psedomorphic_strain == True) and (substrate is None):
+            raise ValueError('substrate tag can not be None when psedomorphic_strain=True.')
+        _MobilityCarrier.__init__(self, compositions=compositions, binaries=binaries, 
+                                  alloy=alloy, system=system, psedomorphic_strain=psedomorphic_strain, 
+                                  substrate=substrate,alloy_type=alloy_type,
+                                  print_log=print_log, eps_n=eps_n_3d)
+        _Mobility3DCarrier.__init__(self)
+        
+    def calculate_3D_mobility(self, n_3d=1, n_dis=1, f_dis=0.5, T=300,
+                              alloy_disordered_effect:bool=False,
+                              dislocation_effect:bool=False,
+                              piezoelectric_effect:bool=False,
+                              acoustic_phonon_effect:bool=False,
+                              polar_optical_phonon_effect:bool=False,
+                              total_mobility:bool=True,
+                              calculate_total_mobility_only:bool=False
+                              ):
+        """
+        This function calculates the sheet mobility from different scattering contributions.
+        The mobility models are implemented based on the following references.
+        
+        Ref-1: Rajan et al., Appl. Phys. Lett. 88, 042103 (2006) => alloy disorder, polar optical phonon
+        Ref-2: DJ. and UKM., PRB 66, 241307(R) (2002) and DJ. et al., PRB 67, 153306 (2003)  => Dislocation
+        Ref-3: Debdeep Jena's thesis, Chapter-6 APPENDIX, Sec. Three-dimensional carriers => Acoustic phonon 
+            
+        The considered scattering mechanism are:
+            Alloy disorder limited (AD)
+            Threading dislocation mediated (DIS)
+            Piezoelectric effect (PE)
+            Acoustic phonon (AP) : Deformation potential mediated
+            Polar optical phonon (POP)
+        
+        Units:
+            n_3d => in 1e18 cm^-3
+            c_lattice => in A
+            a_lattice => in A
+            sc_potential => in eV
+            n_dis => 1e10 cm^-2
+            f_dis => unit less
+            E_pop => eV
+
+        Parameters
+        ----------
+        n_3d : 1D float array, optional (unit: 1e18 cm^-3)
+            Array containing carrier density data for compositions. Array size
+            should be same as composition arrary. The default is 1.
+        n_dis : float, optional (unit: 1e10 cm^-2)
+            Threading dislocation density. The default is 1.
+        f_dis : float, optional (unit: unitless)
+            Fraction of dislocation that contributes in scattering. 
+            The default is 0.5.
+        T : float, optional (unit: K)
+            Temperature at which mobility calculations will be done. 
+            The default is 300K.
+        alloy_disordered_effect : bool, optional
+            Whether to calculate alloy disordered mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. The default is False.
+        dislocation_effect : bool, optional
+            Whether to calculate interface roughness effect mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. The default is False.
+        piezoelectric_effect : bool, optional
+            Whether to calculate piezoelectric effect mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. The default is False.
+        acoustic_phonon_effect : bool, optional
+            Whether to calculate acoustic phonon effect mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. 
+            This includes only deformation potential mediated scattering.
+            The default is False.
+        polar_optical_phonon_effect : bool, optional
+            Whether to calculate polar optical phonon effect mediated mobility. Or, whether to include 
+            this contribution in total mobility calculation. The default is False.
+        total_mobility : bool, optional
+           Whether to calculate total mobility. The default is True.
+        calculate_total_mobility_only : 
+            Calculate only the total mobility. If False the return data also contains individual 
+            specified contributions.
+
+        Returns
+        -------
+        pandas dataframe of compositions and mobilities (unit: cm^2 V^-1 S^-1).
+            Total (or individual contributions) sheet mobility.
+            
+        """
+        
+        self.alloy_disordered_effect_=alloy_disordered_effect
+        self.dislocation_effect_=dislocation_effect
+        self.piezoelectric_effect_=piezoelectric_effect
+        self.acoustic_phonon_effect_=acoustic_phonon_effect
+        self.polar_optical_phonon_effect_=polar_optical_phonon_effect
+        self.only_total_mobility = calculate_total_mobility_only
+        self.total_mobility_=total_mobility
+        return self._calculate_3d_mobility(n_3d=n_3d, n_dis=n_dis, f_dis=f_dis, T=T)
+
+    def Dislocation_3D_Tc_Tq_ratio(self, eps_s, n_3d, m_star):
+        """
+        Calculate the ratio of classical (or momentum) tp quantum scattering times
+        due to charged dislocation scattering.
+        
+        Ref: DJ. and UKM., PRB 66, 241307(R) (2002) and DJ. et al., PRB 67, 153306 (2003) 
+
+        Parameters
+        ----------
+        eps_s : float or 1d array of float (unit: epsilon_0)
+            Static dielectic constants of the material. In the unit of vacumm permitivity.
+        n_3d : float or 1d array of float (unit: 1E18 cm^-3 )
+            3DEG density.
+        m_star : float or 1d array of float (unit: m0)
+            Carrier effective mass. In the unit of m0.
+
+        Returns
+        -------
+        float or 1d array of float (unitless)
+            The tau_c/Tau_q ratio (classical by quantum scattering time).
+
+        """
+        return self._ratio_dis_tc_tq(eps_s, n_3d, m_star)
 
 class Plottings(_plot_mobilities):  
     """
