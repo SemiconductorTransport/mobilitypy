@@ -4,7 +4,7 @@
 
 <!-- =========================================================== -->
 <!-- Here absolute path is added since pypi documentation could not access package relative path-->
-![](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/imgs/mobilities_300K.png) | ![](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/mobilitypy/imgs/LFOM_norm_300K.png) | ![](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/imgs/LFOM_norm_T_dependence.png)
+![](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/imgs/mobilities_300K.png) | ![](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/imgs/LFOM_norm_300K.png) | ![](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/imgs/LFOM_norm_T_dependence.png)
 :------------------------------:| :------------------------------:| :------------------------------:
 AlN/AlGaN HEMT 2DEG mobilities | AlN/AlGaN HEMT lateral figure of merit | AlN/AlGaN HEMT lateral figure of merit (Temperature effect) 
 <!-- =========================================================== -->
