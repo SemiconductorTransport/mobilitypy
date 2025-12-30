@@ -2,7 +2,7 @@ include pyproject.toml
 include README.md
 include LICENSE
 recursive-include mobilitypy/imgs *.png
-
+recursive-include tests *
 exclude MANIFEST.in
 
 # Remove unwanted top-level folders
