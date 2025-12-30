@@ -3,7 +3,7 @@
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
-![](imgs/mobilities_300K.png) | ![](imgs/LFOM_norm_300K.png) | ![](imgs/LFOM_norm_T_dependence.png) 
+![](mobilitypy/imgs/mobilities_300K.png) | ![](mobilitypy/imgs/LFOM_norm_300K.png) | ![](mobilitypy/imgs/LFOM_norm_T_dependence.png)
 :------------------------------:| :------------------------------:| :------------------------------:
 AlN/AlGaN HEMT 2DEG mobilities | AlN/AlGaN HEMT lateral figure of merit | AlN/AlGaN HEMT lateral figure of merit (Temperature effect) 
 <!-- =========================================================== -->
@@ -46,10 +46,10 @@ __Contact us:__ [Email developer/maintainer team](mailto:badalmondal.chembgc@gma
     6. pandas
 ```
 
-### 2. Installation using `pip` [not available yet]
+### 2. Installation using `pip` [*recommended]
 
 ```
-    TBA
+    pip install mobilitypy
 ```
 
 ### 3. Installation from github repository
@@ -59,7 +59,7 @@ __Contact us:__ [Email developer/maintainer team](mailto:badalmondal.chembgc@gma
     cd mobilitypy
     pip install .  
 ```
-Or, without cloning
+Or, 
 ```
     pip install git+https://github.com/SemiconductorTransport/mobilitypy.git@specific_branch
 ```

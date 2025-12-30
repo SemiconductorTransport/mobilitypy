@@ -1,11 +1,10 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools", "wheel", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "mobilitypy"
-version = "1.0.4"
-#dynamic = ["version"]
+dynamic = ["version"]
 dependencies = [
     'numpy', 
     'scipy', 
@@ -17,7 +16,7 @@ authors = [
     { name = "Badal Mondal", email = "badalmondal.chembgc@gmail.com" },
 ]
 maintainers = [
-  {name = name = "Badal Mondal", email = "badalmondal.chembgc@gmail.com" },
+  {name = "Badal Mondal", email = "badalmondal.chembgc@gmail.com" },
 ]
 description = "mobilitypy: Python package for mobility calculations in semiconductors"
 readme = "README.md"
@@ -31,12 +30,28 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/SemiconductorTransport/mobilitypy"
-Documentation = "https://github.com/SemiconductorTransport/mobilitypy/wiki"
+Homepage = "https://github.com/SemiconductorTransport/mobilitypy/wiki"
+Documentation = "https://github.com/SemiconductorTransport/mobilitypy/wiki/Package-Documentation"
 Repository = "https://github.com/SemiconductorTransport/mobilitypy.git"
 Issues = "https://github.com/SemiconductorTransport/mobilitypy/issues"
 Changelog = "https://github.com/SemiconductorTransport/mobilitypy/wiki/Brief-release-history"
 Releasenotes = "https://github.com/SemiconductorTransport/mobilitypy/releases"
+
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["mobilitypy.imgs", "mobilitypy.imgs.*", "imgs", "docs", "tutorials"]
+include = ["mobilitypy*", "mobilitypy.*"]
+namespaces = false
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.package-data]
+mobilitypy = ["imgs/*.png"]
+
+[tool.setuptools_scm]
+version_file = "mobilitypy/_version.py"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
