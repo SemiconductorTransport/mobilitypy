@@ -40,15 +40,15 @@ Releasenotes = "https://github.com/SemiconductorTransport/mobilitypy/releases"
 
 [tool.setuptools.packages.find]
 where = ["."]
-exclude = ["mobilitypy.imgs", "mobilitypy.imgs.*", "imgs", "docs", "tutorials"]
 include = ["mobilitypy*", "mobilitypy.*"]
+exclude = ["tests", "imgs", "docs", "tutorials"] #"mobilitypy.imgs", "mobilitypy.imgs.*",
 namespaces = false
 
-[tool.setuptools]
-include-package-data = false
+#[tool.setuptools]
+#include-package-data = false
 
-[tool.setuptools.package-data]
-mobilitypy = ["imgs/*.png"]
+#[tool.setuptools.package-data]
+#mobilitypy = ["imgs/*.png"]
 
 [tool.setuptools_scm]
 version_file = "mobilitypy/_version.py"

@@ -3,7 +3,8 @@
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
-![](mobilitypy/imgs/mobilities_300K.png) | ![](mobilitypy/imgs/LFOM_norm_300K.png) | ![](mobilitypy/imgs/LFOM_norm_T_dependence.png)
+<!-- Here absolute path is added since pypi documentation could not access package relative path-->
+![](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/imgs/mobilities_300K.png) | ![](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/mobilitypy/imgs/LFOM_norm_300K.png) | ![](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/imgs/LFOM_norm_T_dependence.png)
 :------------------------------:| :------------------------------:| :------------------------------:
 AlN/AlGaN HEMT 2DEG mobilities | AlN/AlGaN HEMT lateral figure of merit | AlN/AlGaN HEMT lateral figure of merit (Temperature effect) 
 <!-- =========================================================== -->
@@ -75,9 +76,9 @@ __Documentation__: [Package documentation](https://github.com/SemiconductorTrans
 
 __Discussions__: [Discuss more about the package here](https://github.com/SemiconductorTransport/mobilitypy/discussions)
 
-__Material database__: [here](mobilitypy/src/database.py)
+__Material database__: [here](https://github.com/SemiconductorTransport/mobilitypy/blob/main/mobilitypy/src/database.py)
 
-__Tutorials__: [tutorial](tutorials)
+__Tutorials__: [tutorial](https://github.com/SemiconductorTransport/mobilitypy/tree/main/tutorials)
 
 <!-- =========================================================== -->
 ## Tips and tricks:
@@ -107,7 +108,7 @@ If you use `mobilitypy` in your work, please:
   * **Other publications that used mobilitypy**:
 >> TBA
 
-__2DEG mobility analytical models:__ [Mobility2DEGAnalyticalModels.pdf](docs/Mobility2DEGAnalyticalModels.pdf)
+__2DEG mobility analytical models:__ [Mobility2DEGAnalyticalModels.pdf](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/docs/Mobility2DEGAnalyticalModels.pdf)
 
 __Bibliography file:__ Here is the [bibliography file](https://github.com/SemiconductorTransport/mobilitypy/wiki/References-(bibliography-style)) for your convenience.
 
@@ -122,7 +123,7 @@ Chekout out [version release history here](https://github.com/SemiconductorTrans
 
 <!-- =========================================================== -->
 ## License
-* [GNU General Public License v3.0](LICENSE)
+* [GNU General Public License v3.0](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/LICENSE)
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
