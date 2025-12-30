@@ -1,14 +1,17 @@
 include pyproject.toml
 include README.md
 include LICENSE
+recursive-include mobilitypy/imgs *.png
+
+exclude MANIFEST.in
 
 # Remove unwanted top-level folders
 prune imgs
 prune docs
-prune assets
+prune tutorials
 prune tests
 prune .github
 
 # Or exclude specific patterns:
-exclude *.ipynb
-recursive-exclude docs *  # exclude everything under docs/
+#exclude *.ipynb
+#recursive-exclude docs *  # exclude everything under docs/
