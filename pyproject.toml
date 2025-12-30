@@ -1,11 +1,10 @@
 [build-system]
-requires = ["setuptools"] #, "setuptools-scm"]
+requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "mobilitypy"
-version = "1.0.4"
-#dynamic = ["version"]
+dynamic = ["version"]
 dependencies = [
     'numpy', 
     'scipy', 
@@ -31,8 +30,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/SemiconductorTransport/mobilitypy"
-Documentation = "https://github.com/SemiconductorTransport/mobilitypy/wiki"
+Homepage = "https://github.com/SemiconductorTransport/mobilitypy/wiki"
+Documentation = "https://github.com/SemiconductorTransport/mobilitypy/wiki/Package-Documentation"
 Repository = "https://github.com/SemiconductorTransport/mobilitypy.git"
 Issues = "https://github.com/SemiconductorTransport/mobilitypy/issues"
 Changelog = "https://github.com/SemiconductorTransport/mobilitypy/wiki/Brief-release-history"
@@ -42,14 +41,17 @@ Releasenotes = "https://github.com/SemiconductorTransport/mobilitypy/releases"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["mobilitypy*"]
-exclude = ["imgs", 'docs', "tutorials"]
+exclude = ['imgs', 'docs', "tutorials"]
 namespaces = false
 
-#[tool.setuptools]
-#include-package-data = true
+[tool.setuptools]
+include-package-data = true
 
-#[tool.setuptools.package-data]
-#mobilitypy = ["data/*.csv", "assets/*"]
+[tool.setuptools.package-data]
+mobilitypy = ["pkg_imgs/*.png"]
+
+[tool.setuptools_scm]
+version_file = "mobilitypy/_version.py"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
