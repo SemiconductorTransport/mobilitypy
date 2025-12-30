@@ -46,7 +46,7 @@ __Contact us:__ [Email developer/maintainer team](mailto:badalmondal.chembgc@gma
     6. pandas
 ```
 
-### 2. Installation using `pip` [not available yet]
+### 2. Installation using `pip` [recommended]
 
 ```
     pip install mobilitypy
