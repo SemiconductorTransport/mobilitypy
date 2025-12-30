@@ -48,7 +48,7 @@ namespaces = false
 include-package-data = true
 
 [tool.setuptools.package-data]
-mobilitypy = ["pkg_imgs/*.png"]
+mobilitypy = ["imgs/*.png"]
 
 [tool.setuptools_scm]
 version_file = "mobilitypy/_version.py"

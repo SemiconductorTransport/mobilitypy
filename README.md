@@ -3,7 +3,7 @@
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
-![](mobilitypy/pkg_imgs/mobilities_300K.png) | ![](mobilitypy/pkg_imgs/LFOM_norm_300K.png) | ![](mobilitypy/pkg_imgs/LFOM_norm_T_dependence.png)
+![](mobilitypy/imgs/mobilities_300K.png) | ![](mobilitypy/imgs/LFOM_norm_300K.png) | ![](mobilitypy/imgs/LFOM_norm_T_dependence.png)
 :------------------------------:| :------------------------------:| :------------------------------:
 AlN/AlGaN HEMT 2DEG mobilities | AlN/AlGaN HEMT lateral figure of merit | AlN/AlGaN HEMT lateral figure of merit (Temperature effect) 
 <!-- =========================================================== -->
