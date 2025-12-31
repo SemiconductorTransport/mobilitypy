@@ -72,7 +72,7 @@ Or,
 ## Usage
 __Wiki page__: [Welcome to mobilitypy](https://github.com/SemiconductorTransport/mobilitypy/wiki)
 
-__Documentation__: [Package documentation](https://github.com/SemiconductorTransport/mobilitypy/wiki/Package-Documentation)
+__Documentation__: [Package documentation](https://github.com/SemiconductorTransport/mobilitypy/wiki/01.-Package-documentation)
 
 __Discussions__: [Discuss more about the package here](https://github.com/SemiconductorTransport/mobilitypy/discussions)
 
@@ -83,9 +83,9 @@ __Tutorials__: [tutorial](https://github.com/SemiconductorTransport/mobilitypy/t
 <!-- =========================================================== -->
 ## Tips and tricks:
 
-__FAQs__: [here](https://github.com/SemiconductorTransport/mobilitypy/wiki/Frequently-Asked-Questions-(FAQs))
+__FAQs__: [here](https://github.com/SemiconductorTransport/mobilitypy/wiki/02.-Frequently-asked-questions-(FAQs))
 
-You can find a list of common user issues encountered while using this software [here](https://github.com/SemiconductorTransport/mobilitypy/wiki/Frequently-Asked-Questions-(FAQs)). We appreciate and respect our users' views and are committed to providing the best experience possible. Your feedback is highly valued.
+You can find a list of common user issues encountered while using this software [here](https://github.com/SemiconductorTransport/mobilitypy/wiki/02.-Frequently-asked-questions-(FAQs)). We appreciate and respect our users' views and are committed to providing the best experience possible. Your feedback is highly valued.
 
 <!-- =========================================================== -->
 
@@ -110,14 +110,14 @@ If you use `mobilitypy` in your work, please:
 
 __2DEG mobility analytical models:__ [Mobility2DEGAnalyticalModels.pdf](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/docs/Mobility2DEGAnalyticalModels.pdf)
 
-__Bibliography file:__ Here is the [bibliography file](https://github.com/SemiconductorTransport/mobilitypy/wiki/References-(bibliography-style)) for your convenience.
+__Bibliography file:__ Here is the [bibliography file](https://github.com/SemiconductorTransport/mobilitypy/wiki/03.-References-(bibliography-style)) for your convenience.
 
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
 ## Version release
 
-Chekout out [version release history here](https://github.com/SemiconductorTransport/mobilitypy/wiki/Brief-release-history) for the full list of updates and upgrades.
+Chekout out [version release history here](https://github.com/SemiconductorTransport/mobilitypy/wiki/04.-Release-history) for the full list of updates and upgrades.
 
 <!-- =========================================================== -->
 

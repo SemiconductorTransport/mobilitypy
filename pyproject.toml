@@ -31,10 +31,10 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/SemiconductorTransport/mobilitypy/wiki"
-Documentation = "https://github.com/SemiconductorTransport/mobilitypy/wiki/Package-Documentation"
+Documentation = "https://github.com/SemiconductorTransport/mobilitypy/wiki/01.-Package-documentation"
 Repository = "https://github.com/SemiconductorTransport/mobilitypy.git"
 Issues = "https://github.com/SemiconductorTransport/mobilitypy/issues"
-Changelog = "https://github.com/SemiconductorTransport/mobilitypy/wiki/Brief-release-history"
+Changelog = "https://github.com/SemiconductorTransport/mobilitypy/wiki/04.-Release-history"
 Releasenotes = "https://github.com/SemiconductorTransport/mobilitypy/releases"
 
 
