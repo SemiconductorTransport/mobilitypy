@@ -17,7 +17,7 @@ class _MobilityCarrier(_AlloyParams):
     '''
     
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', psedomorphic_strain=False, substrate=None, 
+                 system='ternary', pseudomorphic_strain=False, substrate=None, 
                  alloy_type='WZ', print_log=None, eps_n=1e-10):
         """
         Initiation function of the class _MobilityCarrier.
@@ -40,7 +40,7 @@ class _MobilityCarrier(_AlloyParams):
         system : string (case sensitive), optional
             Type of the alloy. E.g. 'ternary'. 
             The default is 'ternary'.
-        psedomorphic_strain : bool, optional
+        pseudomorphic_strain : bool, optional
             Whether to consider pseudomorphic strain.
             The default is False.
         substrate : string or float (unit: Angstrom), optional
@@ -68,6 +68,9 @@ class _MobilityCarrier(_AlloyParams):
         None.
 
         """
+        if (pseudomorphic_strain == True) and (substrate is None):
+            raise ValueError('substrate tag can not be None when psedomorphic_strain=True.')
+        
         self.print_info = print_log
         if self.print_info is not None: self.print_info = self.print_info.lower()
 
@@ -76,7 +79,7 @@ class _MobilityCarrier(_AlloyParams):
         _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, alloy=alloy)
         self._get_alloy_params(system=system)
         
-        if psedomorphic_strain:
+        if pseudomorphic_strain:
             self.alloy_type_ = alloy_type
             if isinstance(substrate, str):
                 substrate_params_dic = _AlloyParams._get_substrate_properties(substrate)
@@ -86,14 +89,14 @@ class _MobilityCarrier(_AlloyParams):
                 
             lattice_a = self.alloy_params_.get('lattice_a0') 
             lattice_c = self.alloy_params_.get('lattice_c0') 
-            epsilon_zz = self._get_Poisson_ratio()*((substrate_lp - lattice_a) / lattice_a)
+            epsilon_zz = self.alloy_params_.get('biaxial_distortion_coefficient')\
+                *((substrate_lp - lattice_a) / lattice_a)
             # Re-populate the lattice parameters
             self.alloy_params_['lattice_a0']  = np.array([substrate_lp]*len(lattice_a)) 
             self.alloy_params_['lattice_c0']= lattice_c * (1.0 + epsilon_zz)
             
     def _set_params_general(self, m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
-                            n_dis, f_dis, mass_density, v_LA, E_pop, T, 
-                            K_square=None, E_D=None, rms_roughness=None, corr_len=None):
+                            n_dis, f_dis, mass_density, v_LA, E_pop, T):
         """
         This function sets the parameters for mobility calculations.
         """
@@ -111,31 +114,6 @@ class _MobilityCarrier(_AlloyParams):
         self.temp_ = T if T > 1e-8 else 1e-5 # Make sure zero divison does not happen when T=0 is choosen
         self.omega = sqrt_3_by_2 * self.a_lp**2 * self.c_lp # sqrt(3)/2 * a^2 c 
         self.m0_by_e_ = self.m_star_ * e_mass / e_charge 
-        #==========================================
-        self.K_sqr = K_square
-        self.E_d = E_D
-        self.corr_len_ = corr_len
-        self.rms_roughness_ = rms_roughness
-
-    def _print_database_params_general(self):
-        """
-        This function prints the log of model descriptions.
-
-        Returns
-        -------
-        None.
-
-        """
-        if self.print_info == 'high':
-            print(f'\t-- a={self.a_lp:.5f} nm | c={self.c_lp:.5f} nm | m*={self.m_star_:.5f} m0 | eps_s={self.eps_s_:.5f} eps0 | eps_h={self.eps_h_:.5f} eps0')
-            print(f'\t-- Mass density={self.mass_density_:.2f} | scattering potential={self.sc_potential_:.2f} eV | T={self.temp_:.1f} K')
-            if (self.rms_roughness_ is not None) and (self.corr_len_ is not None):
-                print(f'\t-- Interface rms roughness={self.rms_roughness_:.3f} nm | correlation length={self.corr_len_:.3f} nm')
-            print(f'\t-- Dislocation density={self.n_dislocation_:.4f} nm^-2 | dislocation occupancy={self.f_dislocation_:.1f}')
-            if (self.K_sqr is not None) and (self.E_d is not None):
-                print(f'\t-- Electromechanical coupling coefficient={self.K_sqr:.5f} | deformation potential={self.E_d:.5f}')
-            print(f'\t-- Longitudinal acoustic phonon velocity={self.v_LA:.2f} m/s | polar optical phonon energy={self.E_pop:.5f} eV')
-            print('')
             
     @staticmethod
     def _calculate_sheet_resitance(carrier_density, mobility):

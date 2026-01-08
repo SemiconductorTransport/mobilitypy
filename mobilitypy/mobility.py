@@ -1,8 +1,61 @@
-from .src import _AlloyParams, _MobilityCarrier, _Mobility2DCarrier, _Mobility3DCarrier 
+from .src import _DataBase, _AlloyParams, _MobilityCarrier, _Mobility2DCarrier, _Mobility3DCarrier 
 from .utilities import _plot_mobilities
 import numpy as np
 
 ## ==============================================================================
+class DataBase(_DataBase):
+    """
+    The functions in this class use to print/manipulate the material parameters
+    in the database.
+    """
+    def __init__(self):
+        self.dtbase = _DataBase()
+        
+    def print_database(self, for_material:str=None):
+        """
+        This function prints the information of material parameters from the database.
+
+        Parameters
+        ----------
+        for_material : string (case sensitive), optional
+            The material name for which the parameters will be printed. 
+            The name should match the name in database. If None, prints general
+            information about the database.
+            The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.dtbase._print_database(for_material=for_material)
+        
+    def update_database(self, for_material=None, with_new_database=None):
+        """
+        To update the material parameters in the database. 
+        Not implemented yet. Contact developer.
+
+        Parameters
+        ----------
+        for_material : string (case sensitive), optional
+            The material name for which the parameters will be printed. 
+            The name should match the name in database. If None, prints general
+            information about the database.
+            The default is None.
+        with_new_database : dictionary, optional
+            The material parameters. The parameter names should match in the database.
+            Use 'print_database()' function from DataBase class for material parameter
+            names in the database.
+            The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.dtbase._update_database(for_material=for_material, 
+                                     with_new_database=with_new_database)
+        
 class AlloyParams(_AlloyParams):
     '''
     The functions in this class calculates the parameters for alloy from their
@@ -66,7 +119,7 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
     https://doi.org/10.1063/5.0277051
     """
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', psedomorphic_strain=False, substrate=None,
+                 system='ternary', pseudomorphic_strain=False, substrate=None,
                  alloy_type='WZ', eps_n_2d=1e-10, print_log=None):
         """
         Initiation function of the class Mobility2DCarrier.
@@ -88,7 +141,7 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
         system : string (case sensitive), optional
             Type of the alloy. E.g. 'ternary'. 
             The default is 'ternary'.
-        psedomorphic_strain : bool, optional
+        pseudomorphic_strain : bool, optional
             Whether to consider pseudomorphic strain.
             The default is False.
         substrate : string or float, optional (unit: Angstrom)
@@ -115,10 +168,8 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
         None.
 
         """
-        if (psedomorphic_strain == True) and (substrate is None):
-            raise ValueError('substrate tag can not be None when psedomorphic_strain=True.')
         _MobilityCarrier.__init__(self, compositions=compositions, binaries=binaries, 
-                                  alloy=alloy, system=system, psedomorphic_strain=psedomorphic_strain, 
+                                  alloy=alloy, system=system, pseudomorphic_strain=pseudomorphic_strain, 
                                   substrate=substrate,alloy_type=alloy_type,
                                   print_log=print_log, eps_n=eps_n_2d)
         _Mobility2DCarrier.__init__(self)
@@ -229,6 +280,11 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
                 Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High 
                 Temperature Stability of Electron Mobility. Adv. Electron. Mater. 2024, 2400069. 
                 https://doi.org/10.1002/aelm.202400069
+                NB 1: Here, the dislocation scattering includes scattering from threading edge dislocation
+                charge line only.
+            'Mondal2026v1':
+                Here, the dislocation scattering includes scattering from threading edge dislocation
+                charge line plus scattering from strain field from threading edge dislocations.
 
         Returns
         -------

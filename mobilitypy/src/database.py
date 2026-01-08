@@ -1,5 +1,10 @@
 '''
-Ref-1: Bassaler et. al., Adv. Electron. Mater. 2024, 2400069
+The database contains the following information for each material. 
+For ternary or higher-order materials, the parameter values represent 
+the bowing coefficients.
+
+Ref-1: Bassaler et. al., Adv. Electron. Mater., 11, 2400069 (2025)
+Ref-1': Mondal et. al., APL Electronic Devices 1, 026117 (2025)
 Ref-2: Pant et al, APL 117, 242105 (2020)
 Ref-3: http://www.ioffe.ru/SVA/NSM/Semicond/index.html
 Ref-4: Vurgaftman et. al., J. Appl. Phys. 94, 3675–3696 (2003)
@@ -17,7 +22,7 @@ static_dielectric_constant => epsilon_0
 high_frequency_dielectric_constant => epsilon_0
 LA_phonon_velocity => m/s
 TA_phonon_velocity => m/s
-deformation_potential => eV
+CB_deformation_potential => eV
 PO_phonon_energy => eV
 electromechanical_coupling_const => unitless
 C_ij => GPa # Ref-4
@@ -38,10 +43,10 @@ database = {
              'high_frequency_dielectric_constant': 5.35,
              'LA_phonon_velocity': 6560,
              'TA_phonon_velocity': 2680,
-             'deformation_potential': 8.3,
+             'CB_deformation_potential': 8.3,
              'PO_phonon_energy': 91.2e-3,
              'electromechanical_coupling_const': 0.045,
-             'C_11': 390, 'C_12': 145, 'C_13': 106, 'C_33': 398, 'C_44': 105
+             'C_11': 390, 'C_12': 145, 'C_13': 106, 'C_33': 398, 'C_44': 105 
              },
            'AlN': 
             {'mass_density': 3230,
@@ -56,7 +61,7 @@ database = {
              'high_frequency_dielectric_constant': 4.60,
              'LA_phonon_velocity': 9060,
              'TA_phonon_velocity': 3700,
-             'deformation_potential': 9.5,
+             'CB_deformation_potential': 9.5,
              'PO_phonon_energy': 99.0e-3,
              'electromechanical_coupling_const': 0.106,
              'C_11': 396, 'C_12': 137, 'C_13': 108, 'C_33': 373, 'C_44': 116
@@ -76,7 +81,7 @@ database = {
              'high_frequency_dielectric_constant': 0,
              'LA_phonon_velocity': 0,
              'TA_phonon_velocity': 0,
-             'deformation_potential': 0,
+             'CB_deformation_potential': 0,
              'PO_phonon_energy': 0,
              'electromechanical_coupling_const': 0,
              'C_11': 0, 'C_12': 0, 'C_13': 0, 'C_33': 0, 'C_44': 0

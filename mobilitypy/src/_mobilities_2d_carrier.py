@@ -183,9 +183,10 @@ class _Mobility2DCarrier:
         sc_potential = self.alloy_params_.get('alloy_scattering_potential') 
         LA_velocity = self.alloy_params_.get('LA_phonon_velocity')
         mass_densitty = self.alloy_params_.get('mass_density')
-        deformation_pot = self.alloy_params_.get('deformation_potential')
+        deformation_pot = self.alloy_params_.get('CB_deformation_potential')
         electromech_coupling_sqr = self.alloy_params_.get('electromechanical_coupling_const')
-        POP_energy = self.alloy_params_.get('PO_phonon_energy')           
+        POP_energy = self.alloy_params_.get('PO_phonon_energy')  
+        isotropic_Poisson_ratio = self.alloy_params_.get('isotropic_Poisson_ratio')         
 
         if isinstance(n_2d, int) or isinstance(n_2d, float):
             n_2d = [n_2d] * len(self.comps_)
@@ -199,7 +200,8 @@ class _Mobility2DCarrier:
                              lattice_c[ii], lattice_a[ii], sc_potential[ii], self.comps_[ii],
                              n_2d[ii], rms_roughness, corr_len, n_dis, f_dis, 
                              T, electromech_coupling_sqr[ii], deformation_pot[ii], 
-                             mass_densitty[ii], LA_velocity[ii], POP_energy[ii])
+                             mass_densitty[ii], LA_velocity[ii], POP_energy[ii],
+                             isotropic_Poisson_ratio[ii])
             self._print_database_params()
             # mobility unit: cm^2 V^-1 S^-1
             if self.print_info is not None: print(f'- Composition: {self.comps_[ii]:.5f}')
@@ -241,7 +243,14 @@ class _Mobility2DCarrier:
                     inv_sc = self._inv_tau_dis()
                     total_inv_sc += inv_sc
                     mobility[ii]['DIS'] = self._mobility_calculator(inv_sc)
-                    if return_sc_rates: mobility[ii]['DIS_sc'] = inv_sc
+                    if return_sc_rates: 
+                        mobility[ii]['DIS_sc'] = inv_sc
+                    if self.mobility_model_ == 'Mondal2026v1':
+                        inv_sc = self._inv_tau_dis_strain()
+                        total_inv_sc += inv_sc
+                        mobility[ii]['DIS_Strain'] = self._mobility_calculator(inv_sc)
+                        if return_sc_rates: 
+                            mobility[ii]['DIS_Strain_sc'] = inv_sc
                     
                 if self.polar_optical_phonon_effect_:
                     if self.print_info is not None: print('\t-- Calculating polar optical phonon effect mobility')
@@ -286,15 +295,22 @@ class _Mobility2DCarrier:
         
     def _set_params(self, m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
                     alloy_composition, n_2d, rms_roughness, corr_len, n_dis, f_dis, 
-                    T, K_square, E_D, mass_density, v_LA, E_pop):
+                    T, K_square, E_D, mass_density, v_LA, E_pop, poisson_ratio):
         """
         This function sets the parameters for mobility calculations.
         """
         self._set_params_general(m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
-                                 n_dis, f_dis, mass_density, v_LA, E_pop, T, K_square, 
-                                 E_D, rms_roughness, corr_len)
+                                 n_dis, f_dis, mass_density, v_LA, E_pop, T)
+        #==========================================
         self.comp_ = alloy_composition 
         self.n_2d_ = n_2d
+        #==========================================
+        self.K_sqr = K_square
+        self.E_d = E_D
+        self.corr_len_ = corr_len
+        self.rms_roughness_ = rms_roughness
+        self.poisson_ratio = poisson_ratio
+        #==========================================
         self._get_derived_params()
 
     def _get_derived_params(self):
@@ -303,7 +319,7 @@ class _Mobility2DCarrier:
         self.k_F = np.sqrt(2*pi_*self.n_2d_) # nm^-1
         self.q_TF = fact_q_TF * tmp_ # nm^-1
         self.b_ = fact_b*(self.n_2d_*tmp_)**(1/3) # nm^-1
-        self.fact_1 =  fact_irf_dis * tmp_ /self.eps_s_ # s^-1
+        self.fact_1 = fact_irf_dis * tmp_ /self.eps_s_ # s^-1
         self.k_0 = fact_pop_k0*np.sqrt(self.m_star_*self.E_pop) # nm^-1
 
     def _print_database_params(self):
@@ -317,7 +333,12 @@ class _Mobility2DCarrier:
         """
         if self.print_info == 'high':
             print(f'- Composition={self.comp_:.5f}')
-            self._print_database_params_general()
+            print(f'\t-- a={self.a_lp:.5f} nm | c={self.c_lp:.5f} nm | m*={self.m_star_:.5f} m0 | eps_s={self.eps_s_:.5f} eps0 | eps_h={self.eps_h_:.5f} eps0')
+            print(f'\t-- Mass density={self.mass_density_:.2f} | scattering potential={self.sc_potential_:.2f} eV | T={self.temp_:.1f} K')
+            print(f'\t-- Interface rms roughness={self.rms_roughness_:.3f} nm | correlation length={self.corr_len_:.3f} nm')
+            print(f'\t-- Dislocation density={self.n_dislocation_:.4f} nm^-2 | dislocation occupancy={self.f_dislocation_:.1f}')
+            print(f'\t-- Electromechanical coupling coefficient={self.K_sqr:.5f} | deformation potential={self.E_d:.5f}')
+            print(f'\t-- Longitudinal acoustic phonon velocity={self.v_LA:.2f} m/s | polar optical phonon energy={self.E_pop:.5f} eV')
             print(f'\t-- Fermi wave vector={self.k_F} | b={self.b_}')
             print('')
 
@@ -379,6 +400,7 @@ class _Mobility2DCarrier:
         return self.fact_1 * fact_2 * self._inv_tau_ifr_int() 
         
     # ----------- dislocation -------------------
+    ## Scattering due to threading edge dislocation charge line 
     def _inv_tau_dis_f(self, x):
         return 1/self._int_f_str_denomenator(x, mode='DIS')
 
@@ -389,6 +411,20 @@ class _Mobility2DCarrier:
         if self.n_2d_ < self.eps_n_2d: return 0
         fact_2 = self.n_dislocation_ * self.f_dislocation_**2 / (4*pi_* self.k_F**4 * self.c_lp**2)
         return self.fact_1 * fact_2 * self._inv_tau_dis_int()
+    
+    ## Scattering due to strain field of threading edge dislocation line 
+    def _inv_tau_dis_strain_f(self, x):
+        return x**2/self._int_f_str_denomenator(x, mode='DIS')
+
+    def _inv_tau_dis_strain_int(self):
+        return sc.integrate.quad(self._inv_tau_dis_strain_f, 0, 1)[0]
+    
+    def _inv_tau_dis_strain(self):
+        if self.n_2d_ < self.eps_n_2d: return 0
+        # Burger's vector b_e = a_lp
+        fact_2 = self.n_dislocation_*self.m_star_*self.a_lp**2*self.E_d**2/ (self.k_F**2)
+        poisson_part = (1-2*self.poisson_ratio)/(1-self.poisson_ratio)
+        return fact_dis_strain*fact_2*poisson_part*poisson_part*self._inv_tau_dis_strain_int()
 
     # ----------- alloy disordered -------------------
     def _inv_tau_ado(self):

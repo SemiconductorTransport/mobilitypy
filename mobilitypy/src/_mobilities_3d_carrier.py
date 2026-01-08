@@ -92,8 +92,7 @@ class _Mobility3DCarrier:
                                  self.alloy_params_.get('PO_phonon_energy') 
                                  )
         # Remove small values for the n_3d to avoid 0-division
-        self.n_3d_ = np.where(n_3d < self.eps_n_3d, np.nan, n_3d)
-        self._print_database_params()          
+        self.n_3d_ = np.where(n_3d < self.eps_n_3d, np.nan, n_3d)        
 
         mobility = {}
         total_inv_mu = 0
@@ -188,16 +187,3 @@ class _Mobility3DCarrier:
         # h_bar*h_bar*h_bar*eps_0*eps_0/e_charge**3/e_mass**2*1e22/1e10 = 26941.18974076079
         fact_11 = (self.eps_s_*self.c_lp/self.f_dislocation_/self.m_star_)**2 / self.n_dislocation_
         return fact_11 * fact_12 * 26941.18974076079
-    
-    def _print_database_params(self):
-        """
-        This function prints the log of model descriptions.
-
-        Returns
-        -------
-        None.
-
-        """
-        if self.print_info == 'high':
-            self._print_database_params_general()
-            print('')

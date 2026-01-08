@@ -56,6 +56,7 @@ class _AlloyParams:
         for key, bowing in alloy_params_db.items():
             self.alloy_params_[key] = self.comps_ * bin_1_params_db.get(key) +\
             (1-self.comps_) * bin_2_params_db.get(key) - bowing*self.comps_*(1-self.comps_)
+        self._get_strain_realted_properties()
         #print(self.alloy_params_)
             
     def _get_alloy_params(self, system='ternary'):
@@ -101,27 +102,19 @@ class _AlloyParams:
         """
         return database.get(substrate_name)
     
-    def _get_Poisson_ratio(self):
+    def _get_strain_realted_properties(self):
         """
-        Poisson ratio.
+        This function calculated material properties related to strain-stress relation.
         
-        epsilon_yy = Poisson_ratio * epsilon_xx
-        
-        Poisson_ratio here includes 'negative' sign.
-        For WZ: Poisson_ratio = -2*C_13/C_33
+        Note-1: For Biaxial strain; epsilon_zz = biaxial_distortion_coefficient * epsilon_xx
+        Note-2: For WZ structure the Poisson ratio is anisotropic. However, the strain
+        field due to edge dislocation uses 'isotropic/average Poisson ratio'. We use
+        the definition isotropic_Poisson_ratio = C_12/(C_11+C_12) following reference
+        Shi et al., APL 74, 573 (1999). This was what also used in DJ's thesis.
 
-        Parameters
-        ----------
-        alloy_params_ : dictionary
-            The parameters dictionary for alloy.
-        alloy_type :  str, optional (case insensitive)
-            The crystal type of alloy. This will be considered when calculating
-            parameters like Poisson ratio etc.
-            Use following abbreviation name:
-                for wurtzite use 'WZ' or 'wz'.
-                for zincblende use 'ZB' or 'zb'.
-                for diamond use 'DM' or 'dm'.
-            The default is 'WZ'. 
+        For WZ: 
+            biaxial_distortion_coefficient = -2*C_13/C_33 (including 'negative' sign.)
+            isotropic_Poisson_ratio = C_12/(C_11+C_12)
 
         Raises
         ------
@@ -131,11 +124,15 @@ class _AlloyParams:
         Returns
         -------
         numpy array
-            Poisson ratio. 
+            Distortion coefficient for biaxial strain. 
 
         """
         if self.alloy_type_.lower() == 'wz':
             # epsilon_zz = -2*C_13/C_33 * epsilon_xx
-            return -2*(self.alloy_params_.get('C_13')/self.alloy_params_.get('C_33'))
+            self.alloy_params_['biaxial_distortion_coefficient'] =\
+                -2*(self.alloy_params_.get('C_13')/self.alloy_params_.get('C_33'))
+            # isotropic Poisson ratio = C_12/(C_11 + C_12)
+            self.alloy_params_['isotropic_Poisson_ratio'] =\
+                self.alloy_params_.get('C_12')/(self.alloy_params_.get('C_11')+self.alloy_params_.get('C_12'))
         else:
             raise ValueError(f'{self.alloy_type_} is not implemented yet. Contact developer.')
