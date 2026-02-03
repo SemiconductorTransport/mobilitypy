@@ -7,7 +7,8 @@ class _AlloyParams:
     The functions in this class calculates the parameters for alloy from their
     binary components.
     '''
-    def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN'):
+    def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN',
+                 alloy_type:str='wz'):
         """
         Initiation function of the class _AlloyParams.
 
@@ -26,6 +27,14 @@ class _AlloyParams:
             The alloy name. The name should match the name in database. All   
             implemented materials name list can be found in the README. Case sensitive.
             The default is 'AlGaN'.
+        alloy_type :  str, optional 
+            The crystal type of the materials. This will be considered when calculating
+            parameters like Poisson ratio etc.
+            Use following abbreviation name:
+                for wurtzite use 'WZ' or 'wz'.
+                for zincblende use 'ZB' or 'zb'.
+                for diamond use 'DM' or 'dm'.
+            The default is 'wz'. 
 
         Returns
         -------
@@ -35,6 +44,7 @@ class _AlloyParams:
         self.comps_ = compositions
         self.bins_ = binaries
         self.alloy_ = alloy
+        self.alloy_type_ = alloy_type
 
     def _get_ternary_params(self):
         """
@@ -55,7 +65,7 @@ class _AlloyParams:
         self.alloy_params_ = {}
         for key, bowing in alloy_params_db.items():
             self.alloy_params_[key] = self.comps_ * bin_1_params_db.get(key) +\
-            (1-self.comps_) * bin_2_params_db.get(key) - bowing*self.comps_*(1-self.comps_)
+            (1-self.comps_) * bin_2_params_db.get(key) - bowing*self.comps_*(1-self.comps_)  
         self._get_strain_realted_properties()
         #print(self.alloy_params_)
             

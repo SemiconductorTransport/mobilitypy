@@ -48,7 +48,7 @@ class _MobilityCarrier(_AlloyParams):
             or the substrate in-plane lattice parameter (if float, Angstrom unit).
             The default is None. Error will be raised if substrate=None and 
             psedomorphic_strain=True.
-        alloy_type :  str, optional (case insensitive)
+        alloy_type :  str, optional 
             The crystal type of alloy. This will be considered when calculating
             parameters like Poisson ratio etc.
             Use following abbreviation name:
@@ -76,14 +76,13 @@ class _MobilityCarrier(_AlloyParams):
 
         self.eps_n = eps_n
 
-        _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, alloy=alloy)
+        _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, 
+                              alloy=alloy, alloy_type=alloy_type)
         self._get_alloy_params(system=system)
-        
         if pseudomorphic_strain:
-            self.alloy_type_ = alloy_type
             if isinstance(substrate, str):
-                substrate_params_dic = _AlloyParams._get_substrate_properties(substrate)
-                substrate_lp = substrate_params_dic.get('lattice_a0')
+                substrate_params_dic = self._get_substrate_properties(substrate)
+                substrate_lp = substrate_params_dic.get('lattice_a0') # substrate in-plane lattice parameter
             else:    
                 substrate_lp = float(substrate)
                 
@@ -96,7 +95,7 @@ class _MobilityCarrier(_AlloyParams):
             self.alloy_params_['lattice_c0']= lattice_c * (1.0 + epsilon_zz)
             
     def _set_params_general(self, m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
-                            n_dis, f_dis, mass_density, v_LA, E_pop, T):
+                            n_dis, f_dis, mass_density, v_LA, E_pop, E_D, K_square, T):
         """
         This function sets the parameters for mobility calculations.
         """
@@ -111,43 +110,39 @@ class _MobilityCarrier(_AlloyParams):
         self.mass_density_ = mass_density
         self.v_LA = v_LA
         self.E_pop = E_pop
+        self.K_sqr = K_square
+        self.E_d = E_D
         self.temp_ = T if T > 1e-8 else 1e-5 # Make sure zero divison does not happen when T=0 is choosen
         self.omega = sqrt_3_by_2 * self.a_lp**2 * self.c_lp # sqrt(3)/2 * a^2 c 
-        self.m0_by_e_ = self.m_star_ * e_mass / e_charge 
+        # # m0 / e = 5.685630103565723*10^-12 V.m^-2.s^2
+        self.m_star_by_e_ = 5.685630103565723 * self.m_star_ # 10^-12 V.m^-2.s^2
             
     @staticmethod
     def _calculate_sheet_resitance(carrier_density, mobility):
         """
         This function calculates the sheet resistance.
         
-        Units:
-        carrier_density => in nm^-2
-        e => 1.602176634e-19 C
-        mobility (mu) => cm^2 V^-1 s^-1
-        
         1 coulomb/volt = 1 second/ohm
         1 ohm = 1 C^-1.V.s
 
         R = 1/(e * carrier_density * mu) ohm/square
-          = 1/(1.602176634e-19*1e14 *carrier_density * mu C.cm^-2.cm^2.V^-1.S^-1) 
-          = 62415.09074/(carrier_density * mu) ohm/square
+          = 1/(1.602176634e-19 *carrier_density * mu C.cm^-2.cm^2.V^-1.S^-1) 
+          = 6241509.0744607635/(carrier_density * mu) ohm/square
 
         Parameters
         ----------
-        carrier_density : 1D float array (unit: nm^-2)
-            Array containing carrier density data for compositions. This can be
-            a single number as well. Then all compositions will have same carrier
-            density.
-        mobility : 1D float array (unit: cm^2 V^-1 s^-1)
-            Array containing mobility data for compositions.
+        carrier_density : float/ndarray (unit: 10^12 cm^-2)
+            Array containing carrier density data. 
+        mobility : float/ndarray (unit: cm^2 V^-1 s^-1)
+            Array containing mobility data.
 
         Returns
         -------
-        1D float array (unit: ohm/square)
-            Sheet resistance for compositions.
+        float/ndarray (unit: ohm/square)
+            Sheet resistance.
 
         """
-        return 62415.09074/(carrier_density * mobility)
+        return 6241509.0744607635/(carrier_density * mobility)
     
     @staticmethod
     def _apply_Varshni_T_correction_2_bandgap(bandgap_0, temp:float=300, 
@@ -176,27 +171,45 @@ class _MobilityCarrier(_AlloyParams):
         return bandgap_0 - (bandgap_alpha*temp*temp/(temp+bandgap_beta))
     
     @staticmethod
-    def _ratio_dis_tc_tq(eps_s, n_3d, m_star):
+    def _ratio_dis_tc_tq(n_3d, eps_s, m_star, f_dis:float=1.0):
         """
         Calculate the ratio of classical (or momentum) tp quantum scattering times
-        due to charged dislocation scattering.
+        due to charged dislocation scattering. It assumes degenerate electron gas.
         
         Ref: DJ. and UKM., PRB 66, 241307(R) (2002) and DJ. et al., PRB 67, 153306 (2003) 
 
         Parameters
         ----------
+        n_3d : float or 1d array of float (unit: 1E18 cm^-3 )
+            Volumetric carrier density.
         eps_s : float or 1d array of float (unit: epsilon_0)
             Static dielectic constants of the material. In the unit of vacumm permitivity.
-        n_3d : float or 1d array of float (unit: 1E18 cm^-3 )
-            3DEG density.
         m_star : float or 1d array of float (unit: m0)
             Carrier effective mass. In the unit of m0.
-
+        f_dis : float, optional (unit: unitless)
+            Fraction of dislocation that contributes in scattering. This will be
+            used in tau_c/tau_q ratio calculation for dislocation.
+            The default is 1.0.
+            
         Returns
         -------
-        float or 1d array of float (unitless)
-            The tau_c/Tau_q ratio (classical by quantum scattering time).
+        _Fermi_wave_vector : float or 1d array of float (unit: cm^-1)
+            Fermi wave vector.
+        _Fermi_energy : float or 1d array of float (unit: eV)
+            Fermi energy. This fundamentally assumes metalic 3DEG.
+        _Thomas_Fermi_screening_len : float or 1d array of float (unit: cm)
+            Thomas Fermi screening length.
+        tau_c_by_tau_q_dis : float or 1d array of float (unit: unitless)
+            The tau_c/Tau_q ratio for charged dislocation (classical by quantum scattering time).
 
         """
+        # (3*pi_*pi_*1e18)**(1/3) = 3093667.7262801332
+        _Fermi_wave_vector = 3093667.7262801332 * n_3d**(1/3) # cm^-1
+        # h_bar**2*1e4/2/e_mass/e_charge = 3.809982110968585e-16
+        _Fermi_energy = 3.809982110968585e-16 * _Fermi_wave_vector**2 / m_star # eV
+        # 10*np.sqrt(h_bar**2*eps_0*pi_**(4/3)/(3**(1/3)*e_charge**2*e_mass*1e6)) = 3.665292799274651e-08
+        _Thomas_Fermi_screening_len = 3.665292799274651e-08 * np.sqrt(eps_s/m_star/(n_3d**(1/3))) # cm
         #2*eps_0*h_bar**2*pi_**(8/3)*3**(1/3)/e_charge/e_charge/e_mass*1e8 = 0.025715482457837318
-        return 1 + 0.025715482457837318*eps_s*n_3d**(1/3)/m_star
+        tau_c_by_tau_q_dis = (1 + 0.025715482457837318*eps_s*n_3d**(1/3)/m_star)/(f_dis**2)
+        return (_Fermi_wave_vector, _Fermi_energy, _Thomas_Fermi_screening_len, 
+                tau_c_by_tau_q_dis)

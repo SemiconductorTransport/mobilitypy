@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import scipy as sc
+import scipy.integrate as integrate
 from ._constants import *
 
 ## ==============================================================================
@@ -35,78 +35,8 @@ class _Mobility2DCarrier:
         """
         self.eps_n_2d = self.eps_n
 
-    def _calculate_figure_of_merit(self, n_2d, mobility, temp:float=300, mode:str='LFOM', 
-                                   T_corect_bandgap:bool=False,
-                                   direct_bandgap:bool=True, indirect_bandgap:bool=False):
-        """
-        This function calculates the figure-of-merit (FOM). Available FOMs are
-        LFOM: Lateral figure-of-merit
-        
-        Ref: J. L. Hudgins, G. S. Simin, E. Santi and M. A. Khan, 
-        "An assessment of wide bandgap semiconductors for power devices," 
-        in IEEE Transactions on Power Electronics, vol. 18, no. 3, pp. 907-914, 
-        May 2003, doi: 10.1109/TPEL.2003.810840.
-        
-        direct_bandgap_critical_electric_field = 1.73e5*(bandgap_**2.5) # V/cm
-        indirect_bandgap_critical_electric_field = 2.38e5*(bandgap_**2.5) # V/cm
-        
-        Units:
-        bandgap_ => in eV.
-        temp => in K
-        n_2d => in nm^-2
-        E_cr => in V/cm
-        e => 1.602176634e-19 C
-        mobility (mu) => cm^2 V^-1 s^-1
-        
-        
-        LFOM = e*n_2d*mu*E_cr^2 = 1.602e-19 C * 1e14 cm^-2 * cm^2 V^-1 s^-1 * V^2cm^-2
-                                = 1.602e-5 CVs^-1cm^-2
-                                = 1.602e-5 Wcm^-2    #1 watts = 1 coulombs*volt/second
-                                = 1.602e-11 MW/cm^2
-        
-        Parameters
-        ----------
-        n_2d : 1D float array (unit: nm^-2)
-            Array containing carrier density data for compositions. This can be
-            a single number as well. Then all compositions will have same carrier
-            density.
-        mobility : 1D float array (unit: cm^2 V^-1 s^-1)
-            Array containing mobility data for compositions.
-        temp : float, optional (unit: K)
-            Temperature for band gap correction. The default is 300K.
-        mode : str, optional (['LFOM'])
-            The figure-of-merit name. The default is 'LFOM'.
-        T_corect_bandgap : bool, optional
-            Apply temperature correction to bandgap or not. The default is False.
-        direct_bandgap : bool, optional
-            If the bandgap is direct bandgap or not. The default is True.
-        indirect_bandgap : bool, optional
-            If the bandgap is indirect bandgap or not.. The default is False.
-
-        Returns
-        -------
-        1D float array (unit: MW/cm^2)
-            Figure-of-merit.
-
-        """
-        assert mode in ['LFOM'], 'Requested mode is not implemented yet' 
-        bandgap_ = self.alloy_params_.get('bandgap')
-        bandgap_alpha_ = self.alloy_params_.get('bandgap_alpha')
-        bandgap_beta_ = self.alloy_params_.get('bandgap_beta')
-        if T_corect_bandgap:
-            bandgap_ = self._apply_Varshni_T_correction_2_bandgap(bandgap_, temp=temp,
-                                                                  bandgap_alpha=bandgap_alpha_,
-                                                                  bandgap_beta=bandgap_beta_)
-        
-        if direct_bandgap:
-            critical_electric_field = 1.73e5*(bandgap_**2.5) # V/cm
-        elif indirect_bandgap:
-            critical_electric_field = 2.38e5*(bandgap_**2) # V/cm
-        #print(bandgap_, n_2d)
-        if mode == 'LFOM': #unit: MW/cm^2
-            return 1.602176634e-11 * n_2d * mobility * critical_electric_field * critical_electric_field
-        
-    def _calculate_sheet_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    def _calculate_sheet_mobility(self, n_2d=10, rms_roughness=0.1, corr_len=1, 
                                   n_dis=1, f_dis=0.1, T=300, return_sc_rates:bool=False):
         """
         This function calculates the sheet mobility from different scattering contributions.
@@ -134,30 +64,19 @@ class _Mobility2DCarrier:
             Piezoelectric effect (PE)
             Acoustic phonon (AP)
             Polar optical phonon (POP)
-        
-        Units:
-        c_lattice => in nm
-        a_lattice => in nm
-        sc_potential => in eV
-        n_2d => in nm^-2
-        rms_roughness => nm
-        corr_len => nm
-        n_dis => nm^-2
-        f_dis => unit less
-        E_pop => eV
 
         Parameters
         ----------
-        n_2d : 1D float array or float, optional (unit: nm^-2)
+        n_2d : 1D float array or float, optional (unit: 10^12 cm^-2)
             Array containing carrier density data for compositions. This can be
             a single number as well. Then all compositions will have same carrier
-            density. The default is 0.1
+            density. The default is 10 == 1e13 cm^-2.
         rms_roughness : float, optional (unit: nm)
             Interface root-mean-squared roughness for interface-roughness scattering
             contribution. The default is 0.1.
         corr_len : float, optional (unit: nm)
             Correlation length of interface roughness. The default is 1.
-        n_dis : float, optional (unit: nm^-2)
+        n_dis : float, optional (unit: 10^8 cm^-2)
             Threading dislocation density. The default is 1.
         f_dis : float, optional (unit: unitless)
             Fraction of dislocation that contributes in scattering. 
@@ -172,14 +91,14 @@ class _Mobility2DCarrier:
         -------
         pandas dataframe of compositions and mobilities (unit: cm^2 V^-1 S^-1)
             Total (or individual contributions) sheet mobility. If return_sc_rates=True,
-            then scattering rates are also returned.
+            then scattering rates (10^12 s^-1) and m_star_by_e (10^-12 V.m^-2.s^2) are also returned.
 
         """
         e_effective_mass = self.alloy_params_.get('e_effective_mass') 
         static_dielectric_constant = self.alloy_params_.get('static_dielectric_constant') 
         high_frequency_dielectric_constant = self.alloy_params_.get('high_frequency_dielectric_constant')
-        lattice_a = self.alloy_params_.get('lattice_a0') * 0.1 # angstrom to nm
-        lattice_c = self.alloy_params_.get('lattice_c0') * 0.1 # angstrom to nm
+        lattice_a = self.alloy_params_.get('lattice_a0') 
+        lattice_c = self.alloy_params_.get('lattice_c0') 
         sc_potential = self.alloy_params_.get('alloy_scattering_potential') 
         LA_velocity = self.alloy_params_.get('LA_phonon_velocity')
         mass_densitty = self.alloy_params_.get('mass_density')
@@ -206,7 +125,7 @@ class _Mobility2DCarrier:
             # mobility unit: cm^2 V^-1 S^-1
             if self.print_info is not None: print(f'- Composition: {self.comps_[ii]:.5f}')
             
-            if return_sc_rates: mobility[ii]['m0_by_e'] = self.m0_by_e_
+            if return_sc_rates: mobility[ii]['m_star_by_e'] = self.m_star_by_e_
                 
             total_inv_sc = 0
             if self.only_total_mobility:
@@ -281,7 +200,7 @@ class _Mobility2DCarrier:
                     if return_sc_rates: mobility[ii]['DP_sc'] = inv_sc_dp
                     
                 if self.piezoelectric_effect_:
-                    if self.print_info is not None: print('\t--- Calculating piezoelectric effect mobility')
+                    if self.print_info is not None: print('\t--- Calculating piezoelectric phonon effect mobility')
                     mobility[ii]['PE'] = self._mobility_calculator(inv_sc_pe)
                     if return_sc_rates: mobility[ii]['PE_sc'] = inv_sc_pe
  
@@ -300,13 +219,11 @@ class _Mobility2DCarrier:
         This function sets the parameters for mobility calculations.
         """
         self._set_params_general(m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
-                                 n_dis, f_dis, mass_density, v_LA, E_pop, T)
+                                 n_dis, f_dis, mass_density, v_LA, E_pop, E_D, K_square, T)
         #==========================================
         self.comp_ = alloy_composition 
         self.n_2d_ = n_2d
         #==========================================
-        self.K_sqr = K_square
-        self.E_d = E_D
         self.corr_len_ = corr_len
         self.rms_roughness_ = rms_roughness
         self.poisson_ratio = poisson_ratio
@@ -315,12 +232,19 @@ class _Mobility2DCarrier:
 
     def _get_derived_params(self):
         #-------------- derived parameters --------------
-        tmp_ = self.m_star_ / self.eps_s_ # unit-less
-        self.k_F = np.sqrt(2*pi_*self.n_2d_) # nm^-1
-        self.q_TF = fact_q_TF * tmp_ # nm^-1
-        self.b_ = fact_b*(self.n_2d_*tmp_)**(1/3) # nm^-1
-        self.fact_1 = fact_irf_dis * tmp_ /self.eps_s_ # s^-1
-        self.k_0 = fact_pop_k0*np.sqrt(self.m_star_*self.E_pop) # nm^-1
+        self.m_star_by_eps_s = self.m_star_ / self.eps_s_ 
+        self.m_star_by_eps_s_square = self.m_star_ / self.eps_s_ / self.eps_s_
+        # n_2d = n_2d_ * 1e12 cm^-2
+        # sqrt(2*pi_) = 2.5066282746310002
+        self.k_F = 2.5066282746310002 * np.sqrt(self.n_2d_) # 1e6 cm^-1
+        #e^2 * m0 / (2pi * eps_0 * h_bar^2) * 1e-2 = 377.94522518130917 * 1e6 cm^-1 
+        #self.q_TF = 377.94522518130917 * tmp_ # 1e6 cm^-1 
+        # 0.5*(e_mass*e_charge**2)/((2*pi_)**(3/2)*h_bar**2*eps_0)*1e-8 = 75.3891649487971
+        self.q_TF_by_2k_F = 75.3891649487971 * self.m_star_by_eps_s / np.sqrt(self.n_2d_)
+        #(33*e_charge**2*e_mass/(8*eps_0*h_bar**2) * 1e-2 * 1e12)**(1/3) = 2139.6573408935274 cm^-1
+        self.b_ = 21.396573408935274*(self.n_2d_ * self.m_star_by_eps_s)**(1/3) # 1e6 cm^-1
+        # np.sqrt(2*e_mass*e_charge/h_bar**2)*1e-2 = 51.23167219674931 1e6 cm^-1
+        self.k_pop = 51.23167219674931*np.sqrt(self.m_star_*self.E_pop) # 1e6 cm^-1
 
     def _print_database_params(self):
         """
@@ -342,7 +266,7 @@ class _Mobility2DCarrier:
             print(f'\t-- Fermi wave vector={self.k_F} | b={self.b_}')
             print('')
 
-    def _form_factor(self, x, mode=None):
+    def _form_factor(self, x, delta_2deg:bool=False, mode=None, numerator:bool=False):
         """
         This function calculates Fang-Howard form-factors.
 
@@ -350,9 +274,15 @@ class _Mobility2DCarrier:
         ----------
         x : float
             Scattering states. x=sing(theta/2), theta=scattering angle.
+        delta_2deg : bool, optional
+            If the 2DEG is perfect delta function 2DEG without any spread. For a 
+            perfect 2DEG the FH form factors goes to 1. If true return 1. 
+            The default is False.
         mode : string, optional ['IRF', 'DIS', 'DP', 'PE', 'POP']
             FW form factor which scattering mechanism. 
             The default is None. If None, None is returned.
+        numerator : bool, optional
+            Return Form factor for the numerator. The defalut is False.
 
         Returns
         -------
@@ -361,111 +291,175 @@ class _Mobility2DCarrier:
 
         """
         # Fang-Howard form-factor
-        if mode == 'IRF':
-            # eta(u) = b/(b+2*k_f*u)
-            eta = self.b_/(self.b_ + 2*self.k_F*x)
-            # G(eta) = (2*eta^3 + 3*eta^2 + 3*eta) / 8
-            return eta*(eta*(2*eta+3)+3)/8
-        elif mode == 'DIS':
+        if delta_2deg:
             return 1
-        elif mode in ['DP', 'PE']:
+        
+        if mode in ['IRF','DIS','PE','DP']:
             # eta(u) = b/(b+2*k_f*u)
-            eta = self.b_/(self.b_ + 2*self.k_F*x)
-            return eta*eta*eta
+            eta = self.b_/(self.b_ + 2.0*self.k_F*x)
+        else: #elif mode == 'POP':
+            eta = self.b_/(self.b_ + self.k_pop)
+        # F(eta) = eta^3    
+        F_u_ = eta*eta*eta
+        # G(eta) = (2*eta^3 + 3*eta^2 + 3*eta) / 8
+        G_u_ = eta*(eta*(2*eta+3)+3)/8
+        
+        if mode == 'IRF':
+            return G_u_
+        elif mode == 'DIS' and self.mobility_model_ != 'v1':
+            return F_u_**2 if numerator else G_u_
+        elif mode in ['DP', 'PE']:
+            return F_u_ if self.mobility_model_ == 'v1' else G_u_  
         elif mode == 'POP':
-            # eta(u) = b/(b+k_0)
-            eta = self.b_/(self.b_ + self.k_0)
-            # G(eta) = (2*eta^3 + 3*eta^2 + 3*eta) / 8
-            return eta*(eta*(2*eta+3)+3)/8
+            return G_u_
         else:
-            return None
+            return 1
+        return 1
 
-    def _int_f_str_denomenator(self, x, mode=None):
-        return (x + self.q_TF*self._form_factor(x, mode=mode)/2/self.k_F)**2 * np.sqrt(1 - x**2)
-
-    def _int_f_phon_(self, x, mode=None):
-        return x**3/((2*self.k_F*x + self.q_TF*self._form_factor(x, mode=mode))**2 * np.sqrt(1 - x**2))
+    def _int_f_denomenator(self, x, mode=None):
+        return ((x + self.q_TF_by_2k_F*self._form_factor(x, mode=mode))**2 * np.sqrt(1 - x**2))
 
     # ----- interface roughness ----------------
     def _inv_tau_ifr_f(self, x):
-        return (x**4 * np.exp(-(self.corr_len_ * self.k_F * x)**2) / 
-                self._int_f_str_denomenator(x, mode='IRF'))
+        return (x**4 * np.exp(-(self.corr_len_ * self.k_F * 0.1 * x)**2) / 
+                self._int_f_denomenator(x, mode='IRF'))
 
     def _inv_tau_ifr_int(self):
-        return sc.integrate.quad(self._inv_tau_ifr_f, 0, 1)[0]
+        return integrate.quad(self._inv_tau_ifr_f, 0, 1)[0]
 
     def _inv_tau_ifr(self):
+        # Since self.k_F propto sqrt(self.n_2d_); we must safe guard the scattering mechanism 
+        # where division by either self.n_2d_ or self.k_F are done. 
+        # In case of self.q_TF_by_2k_F, the division is done by k_F. This
+        # term arrises in most scattering integration.
+        # => this safe guard ensures we do not get any scattering in cases for
+        # very low n_2d or no ally scarring for pure binary systems.
         if self.n_2d_ < self.eps_n_2d: return 0
-        fact_2 = (self.rms_roughness_ * self.corr_len_ * self.n_2d_)**2 / 8 
-        return self.fact_1 * fact_2 * self._inv_tau_ifr_int() 
+        #*****************************************
+        # (m0*e^4)/(8*h_bar^3*eps_0^2) * 1e-4 = 81.6046000430338 1e12 s^-1
+        return 81.6046000430338 * self.m_star_by_eps_s_square \
+                * (self.rms_roughness_ * self.corr_len_ * self.n_2d_)**2 \
+                * self._inv_tau_ifr_int() # 1e12 s^-1
         
     # ----------- dislocation -------------------
     ## Scattering due to threading edge dislocation charge line 
     def _inv_tau_dis_f(self, x):
-        return 1/self._int_f_str_denomenator(x, mode='DIS')
+        return self._form_factor(x, mode='DIS', numerator=True) \
+                /self._int_f_denomenator(x, mode='DIS')
 
     def _inv_tau_dis_int(self):
-        return sc.integrate.quad(self._inv_tau_dis_f, 0, 1)[0]
+        return integrate.quad(self._inv_tau_dis_f, 0, 1)[0]
 
     def _inv_tau_dis(self):
+        # Since self.k_F propto sqrt(self.n_2d_); we must safe guard the scattering mechanism 
+        # where division by either self.n_2d_ or self.k_F are done. 
+        # In case of self.q_TF_by_2k_F, the division is done by k_F. This
+        # term arrises in most scattering integration.
+        # => this safe guard ensures we do not get any scattering in cases for
+        # very low n_2d or no ally scarring for pure binary systems.
         if self.n_2d_ < self.eps_n_2d: return 0
-        fact_2 = self.n_dislocation_ * self.f_dislocation_**2 / (4*pi_* self.k_F**4 * self.c_lp**2)
-        return self.fact_1 * fact_2 * self._inv_tau_dis_int()
+        #*****************************************
+        # (m0*e^4)/(4*pi*h_bar^3*eps_0^2) * (1e8 / 1e6**4/ 1e-8**2) = 519511.0190323496 1e12 s^-1
+        return 519511.0190323496 * self.m_star_by_eps_s_square \
+                * self.n_dislocation_ * self.f_dislocation_**2  \
+                * self._inv_tau_dis_int() / (self.k_F**4 * self.c_lp**2) # 1e12 s^-1
     
     ## Scattering due to strain field of threading edge dislocation line 
     def _inv_tau_dis_strain_f(self, x):
-        return x**2/self._int_f_str_denomenator(x, mode='DIS')
+        return x**2*self._form_factor(x, mode='DIS', numerator=True)\
+                /self._int_f_denomenator(x, mode='DIS')
 
     def _inv_tau_dis_strain_int(self):
-        return sc.integrate.quad(self._inv_tau_dis_strain_f, 0, 1)[0]
+        return integrate.quad(self._inv_tau_dis_strain_f, 0, 1)[0]
     
     def _inv_tau_dis_strain(self):
+        # Since self.k_F propto sqrt(self.n_2d_); we must safe guard the scattering mechanism 
+        # where division by either self.n_2d_ or self.k_F are done. 
+        # In case of self.q_TF_by_2k_F, the division is done by k_F. This
+        # term arrises in most scattering integration.
+        # => this safe guard ensures we do not get any scattering in cases for
+        # very low n_2d or no ally scarring for pure binary systems.
         if self.n_2d_ < self.eps_n_2d: return 0
+        #*****************************************
+        #(e_mass*e_charge**2)/(2*pi_*h_bar**3)*1e-4*1e-20 = 0.003173229123349822 1e12 s^-1
         # Burger's vector b_e = a_lp
-        fact_2 = self.n_dislocation_*self.m_star_*self.a_lp**2*self.E_d**2/ (self.k_F**2)
-        poisson_part = (1-2*self.poisson_ratio)/(1-self.poisson_ratio)
-        return fact_dis_strain*fact_2*poisson_part*poisson_part*self._inv_tau_dis_strain_int()
+        poisson_part = ((1-2*self.poisson_ratio)/(1-self.poisson_ratio))**2
+        return 0.003173229123349822 * self.n_dislocation_ * self.m_star_ \
+                * self.a_lp**2 * self.E_d**2 * poisson_part \
+                * self._inv_tau_dis_strain_int() / self.k_F**2 # 1e12 s^-1
 
     # ----------- alloy disordered -------------------
     def _inv_tau_ado(self):
+        # Since self.k_F propto sqrt(self.n_2d_); we must safe guard the scattering mechanism 
+        # where division by either self.n_2d_ or self.k_F are done. 
+        # In case of self.q_TF_by_2k_F, the division is done by k_F. This
+        # term arrises in most scattering integration.
+        # => this safe guard ensures we do not get any scattering in cases for
+        # very low n_2d or no ally scarring for pure binary systems.
         if (self.comp_ < 1e-8) or (self.n_2d_ < self.eps_n_2d) or ((1-self.comp_)<1e-8): return 0
-        fact_2 = self.m_star_ * self.omega * self.sc_potential_**2 * self.comp_ * (1-self.comp_) * self.b_
-        #print(fact_alloy, self.m_star_ ,self.omega ,self.sc_potential_, self.comp_ ,self.b_)
-        return fact_alloy * fact_2
+        #*****************************************
+        #(3*e_mass*e_charge**2)/(16*h_bar**3)*1e6*1e-8**3*1e-4 = 0.37383724882773683 1e12 s^-1
+        return 0.37383724882773683 * self.m_star_ * self.omega * self.sc_potential_**2 \
+                * self.comp_ * (1.0 - self.comp_) * self.b_ # 1e12 s^-1
 
     # ----------- deformation potential -------------------
     def _inv_tau_dp_f(self, x):
-        return x*self._int_f_phon_(x, mode='DP')
+        return x**4/self._int_f_denomenator(x, mode='DP') 
 
     def _inv_tau_dp_int(self):
-        return sc.integrate.quad(self._inv_tau_dp_f, 0, 1)[0]
+        return integrate.quad(self._inv_tau_dp_f, 0, 1)[0]
         
     def _inv_tau_dp(self):
+        # Since self.k_F propto sqrt(self.n_2d_); we must safe guard the scattering mechanism 
+        # where division by either self.n_2d_ or self.k_F are done. 
+        # In case of self.q_TF_by_2k_F, the division is done by k_F. This
+        # term arrises in most scattering integration.
+        # => this safe guard ensures we do not get any scattering in cases for
+        # very low n_2d or no ally scarring for pure binary systems.
         if self.n_2d_ < self.eps_n_2d: return 0
-        fact_2 = (3*self.E_d*self.E_d*self.m_star_*self.temp_*self.k_F*self.k_F*self.b_)/(self.mass_density_*self.v_LA*self.v_LA) 
-        return fact_phonon * 1e9*fact_2 * self._inv_tau_dp_int() 
+        #*****************************************
+        # 3*(e_mass*e_charge**2*k_B)/(4*pi_*h_bar**3)*1e6*1e2 = 6571673.423885714 1e12 s^-1
+        return 6571673.423885714 * (self.m_star_*self.E_d*self.E_d*self.temp_ \
+                  *self.b_*self._inv_tau_dp_int()) / (self.mass_density_*self.v_LA*self.v_LA)  # 1e12 s^-1
 
     # ----------- piezoelectric -------------------
     def _inv_tau_pe_f(self, x):
-        return self._form_factor(x, mode='PE')*self._int_f_phon_(x, mode='PE')
+        return x**3*self._form_factor(x, mode='PE')/self._int_f_denomenator(x, mode='PE')
 
     def _inv_tau_pe_int(self):
-        return sc.integrate.quad(self._inv_tau_pe_f, 0, 1)[0]
+        return integrate.quad(self._inv_tau_pe_f, 0, 1)[0]
         
     def _inv_tau_pe(self):
+        # Since self.k_F propto sqrt(self.n_2d_); we must safe guard the scattering mechanism 
+        # where division by either self.n_2d_ or self.k_F are done. 
+        # In case of self.q_TF_by_2k_F, the division is done by k_F. This
+        # term arrises in most scattering integration.
+        # => this safe guard ensures we do not get any scattering in cases for
+        # very low n_2d or no ally scarring for pure binary systems.
         if self.n_2d_ < self.eps_n_2d: return 0
-        fact_2 = (4*self.k_F*self.K_sqr*self.m_star_*self.temp_)/(eps_0*self.eps_s_)
-        return fact_phonon * 1e-9*fact_2 * self._inv_tau_pe_int() 
+        #*****************************************
+        # (e_mass*e_charge**2*k_B)/(pi_*eps_0*h_bar**3)*1e-2 * 1e-6 = 98.96143403667759 1e12 s^-1
+        return 98.96143403667759 * (self.m_star_*self.K_sqr*self.temp_ \
+                *self._inv_tau_pe_int())/(self.eps_s_*self.k_F) # 1e12 s^-1
 
     # ----------- polar optical phonon -------------------
     def _inv_tau_pop(self):
+        # Since self.k_F propto sqrt(self.n_2d_); we must safe guard the scattering mechanism 
+        # where division by either self.n_2d_ or self.k_F are done. 
+        # In case of self.q_TF_by_2k_F, the division is done by k_F. This
+        # term arrises in most scattering integration.
+        # => this safe guard ensures we do not get any scattering in cases for
+        # very low n_2d or no ally scarring for pure binary systems.
         if self.n_2d_ < self.eps_n_2d: return 0
+        #*****************************************
         eps_star = 1/(1/self.eps_h_ - 1/self.eps_s_)
-        fact_2 = self.m_star_ * self.E_pop * self._form_factor(None, mode='POP')/eps_star/self.k_0 
-        yy = fact_pop_y*self.n_2d_/self.m_star_/self.temp_
-        fact_3 = yy / ((np.exp(self.E_pop*e_charge/k_B/self.temp_) - 1) * (1+yy-np.exp(-yy))) 
-        #print(yy, fact_3, fact_pop * fact_2 * fact_3)
-        return fact_pop * fact_2 * fact_3 
+        fact_2 = np.sqrt(self.m_star_ * self.E_pop) * self._form_factor(None, mode='POP')/eps_star 
+        # pi_*h_bar**2/(e_mass*k_B)*1e12 *1e4 = 27.77985128879875
+        yy = 27.77985128879875*self.n_2d_/self.m_star_/self.temp_
+        # e_charge/k_B = 11604.518121550082
+        fact_3 = yy / ((np.exp(11604.518121550082*self.E_pop/self.temp_) - 1) * (1+yy-np.exp(-yy))) 
+        # e_charge**2*np.sqrt(e_mass*e_charge)/(2*np.sqrt(2)*eps_0*h_bar**2) = 35210.68196468214 1e12 s^-1
+        return 35210.68196468214 * fact_2 * fact_3 
 
     # Scattering rate to mobility calculation
     def _mobility_calculator(self, inverse_scattering):  
@@ -473,5 +467,81 @@ class _Mobility2DCarrier:
         This function calculates the sheet mobility from different scattering contributions.
         """
         # 1e4 is unit conversion from m^2 to cm^2
-        # unit: cm^2 V^-1 S^-1
-        return 1e4/(self.m0_by_e_ * inverse_scattering) if inverse_scattering else np.nan
+        # self.m_star_by_e_ = 5.685630103565723 * self.m_star_ # 10^-12 V.m^-2.s^2
+        # inverse_scattering is in 10^12 s^-1
+        return 1e4/(self.m_star_by_e_ * inverse_scattering) if inverse_scattering else np.nan # cm^2 V^-1 S^-1
+    
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    def _calculate_figure_of_merit(self, n_2d, mobility,  
+                                   temp:float=300,  mode:str='LFOM', 
+                                   T_corect_bandgap:bool=False,
+                                   direct_bandgap:bool=True, 
+                                   indirect_bandgap:bool=False):
+        """
+        This function calculates the figure-of-merit (FOM). Available FOMs are
+        LFOM: Lateral figure-of-merit
+        
+        Ref: J. L. Hudgins, G. S. Simin, E. Santi and M. A. Khan, 
+        "An assessment of wide bandgap semiconductors for power devices," 
+        in IEEE Transactions on Power Electronics, vol. 18, no. 3, pp. 907-914, 
+        May 2003, doi: 10.1109/TPEL.2003.810840.
+        
+        direct_bandgap_critical_electric_field = 1.73e5*(bandgap_**2.5) # V/cm
+        indirect_bandgap_critical_electric_field = 2.38e5*(bandgap_**2) # V/cm
+        
+        Units:
+        bandgap_ => in eV.
+        temp => in K
+        n_2d => in 10^12 cm^-2
+        E_cr => in V/cm
+        e => 1.602176634e-19 C
+        mobility (mu) => cm^2 V^-1 s^-1
+        
+        
+        LFOM = e*n_2d*mu*E_cr^2 = 1.602e-19 C * 1e12 cm^-2 * cm^2 V^-1 s^-1 * V^2cm^-2
+                                = 1.602e-7 CVs^-1cm^-2
+                                = 1.602e-7 Wcm^-2    #1 watts = 1 coulombs*volt/second
+                                = 1.602e-13 MW/cm^2
+        
+        Parameters
+        ----------
+        n_2d : 1D float array (unit: 10^12 cm^-2)
+            Array containing carrier density data .
+        mobility : 1D float array (unit: cm^2 V^-1 s^-1)
+            Array containing mobility data.
+        temp : float, optional (unit: K)
+            Temperature for band gap correction. The default is 300K.
+        mode : str, optional (['LFOM'])
+            The figure-of-merit name. The default is 'LFOM'.
+        T_corect_bandgap : bool, optional
+            Apply temperature correction to bandgap or not. The default is False.
+        direct_bandgap : bool, optional
+            If the bandgap is direct bandgap or not. The default is True.
+        indirect_bandgap : bool, optional
+            If the bandgap is indirect bandgap or not. The default is False.
+
+        Returns
+        -------
+        1D float array (unit: MW/cm^2)
+            Figure-of-merit.
+
+        """
+        assert mode in ['LFOM'], 'Requested mode is not implemented yet' 
+        bandgap_ = self.alloy_params_.get('bandgap')
+        bandgap_alpha_ = self.alloy_params_.get('bandgap_alpha')
+        bandgap_beta_ = self.alloy_params_.get('bandgap_beta')
+        if T_corect_bandgap:
+            bandgap_ = self._apply_Varshni_T_correction_2_bandgap(bandgap_, temp=temp,
+                                                                  bandgap_alpha=bandgap_alpha_,
+                                                                  bandgap_beta=bandgap_beta_)
+        if mode == 'LFOM':  
+            if direct_bandgap:
+                # 1.73**2*e_charge*1e10*1e12*1e-6 =  0.0047951544478985995
+                e_times_e_cr_sqr_pre_fact = 0.0047951544478985995 
+                e_cr_sqr_eg_pow = 5 # 2.5**2
+            else: #elif indirect_bandgap:
+                # 2.38**2*e_charge*1e10*1e12*1e-6 = 0.009075369325629598
+                e_times_e_cr_sqr_pre_fact = 0.009075369325629598
+                e_cr_sqr_eg_pow = 4 # 2**2
+            return e_times_e_cr_sqr_pre_fact * n_2d * mobility \
+                    * bandgap_**e_cr_sqr_eg_pow #MW/cm^2

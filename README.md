@@ -13,6 +13,10 @@ AlN/AlGaN HEMT 2DEG mobilities | AlN/AlGaN HEMT lateral figure of merit | AlN/Al
 ## Systems
 <!-- =========================================================== -->
 ### 1. High electron mobility transistors (HEMTs)
+Details of the mobility models are described here: [2DEG mobility models](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/docs/Mobility2DEGAnalyticalModels.pdf)
+
+### 2. Polarization field effect transistors (PolFETs)
+Details of the mobility models are described here: [3DEG mobility models](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/docs/Mobility3DEGAnalyticalModels.pdf)
 
 <!-- =========================================================== -->
 ## Developers and contributors
@@ -95,20 +99,20 @@ You can find a list of common user issues encountered while using this software 
 If you use `mobilitypy` in your work, please:
 
   * **State EXPLICITLY that you have used the mobilitypy code** (or a modified version of it, if this is the case), for instance, adding a sentence like:
+  
+    "The mobility calculation has been performed using the mobilitypy code."
 
-         "The mobility calculation has been performed using the mobilitypy code"
+  * **How to cite the package:** (use appropriate version number and doi corresponding to your installed mobilitypy)
+>> Badal Mondal, "SemiconductorTransport/mobilitypy: version-V.V.V (vV.V.V))". Zenodo, 2026. doi: XXXXX
 
-  * **Read and cite the following papers** (and the appropriate references therein):
-
-        *  The analytical mobility models are implemented based on the following publications:
+  * **Read and cite the following papers where applicable** (and the appropriate references therein):
+    *  The analytical mobility models are implemented based on the following publications and references therein:
 >> 1. J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High Temperature Stability of Electron Mobility. [Adv. Electron. Mater. 11, 2400069 (2025).](https://doi.org/10.1002/aelm.202400069)
 >> 2. J. Zhang, Y. Hao, J. Zhang, J. Ni, The mobility of two-dimensional electron gas in AlGaN/GaN heterostructures with varied Al content. [Sci. China Ser. F-Inf. Sci. 51, 780–789 (2008).](https://doi.org/10.1007/s11432-008-0056-7)
 >> 3. B. Mondal, P. Pampili, J. Mukherjee, D. Moran, P.J. Parbrook, S. Schulz, Interplay of carrier density and mobility in Al-rich (Al,Ga)N-channel HEMTs: Impact on high-power device performance potential. [APL Electronic Devices 1, 026117 (2025).](https://doi.org/10.1063/5.0277051) [preprint arXiv:2502.13809](https://doi.org/10.48550/arXiv.2502.13809)
 
   * **Other publications that used mobilitypy**:
 >> TBA
-
-__2DEG mobility analytical models:__ [Mobility2DEGAnalyticalModels.pdf](https://raw.githubusercontent.com/SemiconductorTransport/mobilitypy/refs/heads/main/docs/Mobility2DEGAnalyticalModels.pdf)
 
 __Bibliography file:__ Here is the [bibliography file](https://github.com/SemiconductorTransport/mobilitypy/wiki/03.-References-(bibliography-style)) for your convenience.
 

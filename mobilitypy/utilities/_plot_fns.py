@@ -22,7 +22,7 @@ class _plot_mobilities(_GeneratePlots):
     
     def _plot(self, results, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None, 
               ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, mode:str= '2d_carrier_mobility',
-              mobility_model:str='Bassaler', annotate_pos=(0,0), annotatetextoffset=(0,-20), 
+              mobility_model:str='v2', annotate_pos=(0,0), annotatetextoffset=(0,-20), 
               show_right_ticks:bool=False, title_text:str=None, 
               xaxis_label:str='Composition', ls_2d='-', 
               yaxis_label:str=r'Electron mobility ($\mathrm{cm}^2\mathrm{V}^{-1}\mathrm{s}^{-1}$)',   
@@ -30,7 +30,7 @@ class _plot_mobilities(_GeneratePlots):
               show_colorbar:bool=False, colorbar_label:str=None, savefig:bool=False,
               vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
         """
-        This function plots the results.
+        This function plots the mobility results.
 
         Parameters
         ----------
@@ -62,9 +62,9 @@ class _plot_mobilities(_GeneratePlots):
             Which plotting mode to use. The options are 
             '2d_carrier_mobility': To plot 2d mobility plots
             'plane_2d': general 2d plots.
-        mobility_model :  str, optional
+        mobility_model :  str, optional [options: 'v1', 'v2']
             Which mobility model used to generate results. The data structure is 
-            different for different mobility models. The default is 'Bassaler'.
+            different for different mobility models. The default is 'v2'.
         annotate_pos : tuple, optional
             To add annotation at position on the plot. The default is (0,0).
         annotatetextoffset : tuple, optional
@@ -74,7 +74,7 @@ class _plot_mobilities(_GeneratePlots):
         title_text : str, optional
             Title of the figure. The default is None.
         yaxis_label : str, optional
-            Y-axis label text. The default is 'Electron mobility ($\mathrm{cm}^2\mathrm{V}^{-1}\mathrm{s}^{-1}$)'.
+            Y-axis label text. The default is 'Electron mobility (cm^2V^-1s^-1$)'.
         xaxis_label : str, optional
             x-axis label text. The default is 'Composition'.
         ls_2d : matplotlib line style, optional
@@ -123,9 +123,9 @@ class _plot_mobilities(_GeneratePlots):
         if xaxis_label is None: xaxis_label=''
  
         if mode == '2d_carrier_mobility':
-            if mobility_model=='Bassaler':
-                ax, return_plot = self._plot_2d_carrier_mobilities(results, ax, annotate_pos=annotate_pos, 
-                                                                   xytextoffset=annotatetextoffset,color=color)
+            #if mobility_model in ['v1', 'v2']:
+            ax, return_plot = self._plot_2d_carrier_mobilities(results, ax, annotate_pos=annotate_pos, 
+                                                               xytextoffset=annotatetextoffset,color=color)
         elif mode == 'plane_2d':
                 ax, return_plot = self._plot_2d_plane(results, ax, color=color, ls=ls_2d)
         else:

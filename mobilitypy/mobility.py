@@ -1,4 +1,5 @@
-from .src import _DataBase, _AlloyParams, _MobilityCarrier, _Mobility2DCarrier, _Mobility3DCarrier 
+from .src import _DataBase, _AlloyParams, _FermiDiracInt, _MobilityCarrier
+from .src import _Mobility2DCarrier, _Mobility3DCarrier, _FermiDiracInt
 from .utilities import _plot_mobilities
 import numpy as np
 
@@ -64,7 +65,8 @@ class AlloyParams(_AlloyParams):
     def __init__(self):
         pass
             
-    def get_alloy_params(self, system='ternary', compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN'):
+    def get_alloy_params(self, system='ternary', compositions=None, binaries=['AlN', 'GaN'], 
+                         alloy='AlGaN', alloy_type:str='wz'):
         """
         This function calculates the parameters for a ternary alloy from its
         binary component parameters using quadratic interpolation.
@@ -89,6 +91,14 @@ class AlloyParams(_AlloyParams):
             The alloy name. The name should match the name in database. All   
             implemented materials name list can be found in the README. Case sensitive.
             The default is 'AlGaN'.
+        alloy_type :  str, optional 
+            The crystal type of the materials. This will be considered when calculating
+            parameters like Poisson ratio etc.
+            Use following abbreviation name:
+                for wurtzite use 'WZ' or 'wz'.
+                for zincblende use 'ZB' or 'zb'.
+                for diamond use 'DM' or 'dm'.
+            The default is 'wz'. 
 
         Returns
         -------
@@ -96,7 +106,8 @@ class AlloyParams(_AlloyParams):
             Parameters for alloy.
 
         """
-        _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, alloy=alloy)
+        _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, 
+                              alloy=alloy, alloy_type=alloy_type)
         return self._get_alloy_params(system=system)
 
 class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
@@ -119,8 +130,8 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
     https://doi.org/10.1063/5.0277051
     """
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', pseudomorphic_strain=False, substrate=None,
-                 alloy_type='WZ', eps_n_2d=1e-10, print_log=None):
+                 system='ternary', pseudomorphic_strain:bool=False, substrate=None,
+                 alloy_type='WZ', eps_n_2d=1e-8, print_log=None):
         """
         Initiation function of the class Mobility2DCarrier.
         
@@ -149,7 +160,7 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
             or the substrate in-plane lattice parameter (if float, Angstrom unit).
             The default is None. Error will be raised if substrate=None and 
             psedomorphic_strain=True.
-        alloy_type :  str, optional (case insensitive)
+        alloy_type :  str, optional 
             The crystal type of alloy. This will be considered when calculating
             parameters like Poisson ratio etc.
             Use following abbreviation name:
@@ -157,9 +168,9 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
                 for zincblende use 'ZB' or 'zb'.
                 for diamond use 'DM' or 'dm'.
             The default is 'WZ'. 
-        eps_n_2d : float, optional (unit: nm^-2)
+        eps_n_2d : float, optional (unit: 10^12 cm^-2)
             Carrier density below eps_n_2d will be considered as zero. 
-            The default is 1e-10 nm^-2 == 1e4 cm^-2.
+            The default is 1e-8 == 1e4 cm^-2.
         print_log : string, optional => ['high','medium','low', None]
             Determines the level of log to be printed. The default is None.
 
@@ -174,8 +185,9 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
                                   print_log=print_log, eps_n=eps_n_2d)
         _Mobility2DCarrier.__init__(self)
         
-    def calculate_sheet_mobility(self, n_2d=0.1, rms_roughness=0.1, corr_len=1, n_dis=1, f_dis=0.1, 
-                                 T=300, alloy_disordered_effect:bool=False,
+    def calculate_sheet_mobility(self, n_2d=10, rms_roughness=0.1, corr_len=1,  
+                                 n_dis=1, f_dis=0.1, T=300, 
+                                 alloy_disordered_effect:bool=False,
                                  interface_roughness_effect:bool=False,
                                  dislocation_effect:bool=False,
                                  deformation_potential_effect:bool=False, 
@@ -185,7 +197,7 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
                                  total_mobility:bool=True,
                                  calculate_total_mobility_only:bool=False,
                                  return_sc_rates:bool=False,
-                                 mobility_model='Bassaler'):
+                                 mobility_model='v2'):
         """
         This function calculates the sheet mobility from different scattering contributions.
         The mobility models are implemented based on the following references.
@@ -212,30 +224,19 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
             Piezoelectric effect (PE)
             Acoustic phonon (AP)
             Polar optical phonon (POP)
-        
-        Units:
-            c_lattice => in nm
-            a_lattice => in nm
-            sc_potential => in eV
-            n_2d => in nm^-2
-            rms_roughness => nm
-            corr_len => nm
-            n_dis => nm^-2
-            f_dis => unit less
-            E_pop => eV
 
         Parameters
         ----------
-        n_2d : 1D float array or float, optional (unit: nm^-2)
+        n_2d : 1D float array or float, optional (unit: 10^12 cm^-2)
             Array containing carrier density data for compositions. This can be
             a single number as well. Then all compositions will have same carrier
-            density. The default is 0.1.
+            density. The default is 10 == 1e13 cm^-2.
         rms_roughness : float, optional (unit: nm)
             Interface root-mean-squared roughness for interface-roughness scattering
             contribution. The default is 0.1.
         corr_len : float, optional (unit: nm)
             Correlation length of interface roughness. The default is 1.
-        n_dis : float, optional (unit: nm^-2)
+        n_dis : float, optional (unit: 10^8 cm^-2)
             Threading dislocation density. The default is 1.
         f_dis : float, optional (unit: unitless)
             Fraction of dislocation that contributes in scattering. 
@@ -271,10 +272,10 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
             specified contributions.
         return_sc_rates : float, optional 
             Return the scattering rates values.The default is False.
-        mobility_model : str, optional
-            Which mobility model to use. The default is 'Bassaler'.
+        mobility_model : str, optional [options: 'v1', 'v2']
+            Which mobility model to use. The default is 'v2'.
             The mobility is implemented based on following publications:
-            'Bassaler':
+            'v1':
                 J. Bassaler, J. Mehta, I. Abid, L. Konczewicz, S. Juillaguet, S. Contreras, S. Rennesson, 
                 S. Tamariz, M. Nemoz, F. Semond, J. Pernot, F. Medjdoub, Y. Cordier, P. Ferrandis, 
                 Al-Rich AlGaN Channel High Electron Mobility Transistors on Silicon: A Relevant Approach for High 
@@ -282,7 +283,7 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
                 https://doi.org/10.1002/aelm.202400069
                 NB 1: Here, the dislocation scattering includes scattering from threading edge dislocation
                 charge line only.
-            'Mondal2026v1':
+            'v2':
                 Here, the dislocation scattering includes scattering from threading edge dislocation
                 charge line plus scattering from strain field from threading edge dislocations.
 
@@ -290,7 +291,7 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
         -------
         pandas dataframe with compositions and mobility (unit: cm^2 V^-1 S^-1) columns.
             Total (or individual contributions) sheet mobility. If return_sc_rates=True,
-            then scattering rates are also returned.
+            then scattering rates (10^12 s^-1) and m_star_by_e (10^-12 V.m^-2.s^2) are also returned.
 
         """
 
@@ -308,17 +309,19 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
                                               corr_len=corr_len, n_dis=n_dis, f_dis=f_dis, 
                                               T=T, return_sc_rates=return_sc_rates)
     @staticmethod
-    def sc_rate_2_mobility(mstar0_by_e, inverse_scattering):
+    def sc_rate_2_mobility(mstar_by_e, scattering_rate):
         # Scattering rate to mobility calculation 
         """
         This function calculates sheet mobility from scattering rate.
         
         Parameters
         ----------
-        mstar0_by_e : float/array
-            Carrier effective mass in m0 unit multiplied by m0_by_e. 
-            mstar0_by_e = m* X m0 / e
-        inverse_scattering : float/array
+        mstar_by_e : float/array (unit: 10^-12 V.m^-2.s^2)
+            Carrier effective mass in m0 unit multiplied by m_star_by_e. 
+            m_star_by_e = m* X m0 / e
+            Note: The unit here is in meter. The conversion to cm is taken care 
+            of inside the function operation.
+        scattering_rate : float/array (unit: 10^12 s^-1)
             Scattering rate. 
 
         Returns
@@ -329,40 +332,25 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
         """
         # Scattering rate to mobility calculation
         # 1e4 is unit conversion from m^2 to cm^2
-        # unit: cm^2 V^-1 S^-1
-        tau = mstar0_by_e * inverse_scattering
-        tau[tau<1e-30] = np.nan
-        return 1e4/tau
+        tau = mstar_by_e * scattering_rate
+        tau[tau<1e-10] = np.nan
+        return 1e4/tau # cm^2 V^-1 S^-1
 
     def calculate_sheet_resitance(self, n_2d, mobility):
         """
         This function calculates the sheet resistance.
-        
-        Units:
-        n_2d => in nm^-2
-        e => 1.602176634e-19 C
-        mobility (mu) => cm^2 V^-1 s^-1
-        
-        1 coulomb/volt = 1 second/ohm
-        1 ohm = 1 C^-1.V.s
-
-        R = 1/(e * n_2d * mu) ohm/square
-          = 1/(1.602176634e-19*1e14 *n_2d * mu C.cm^-2.cm^2.V^-1.S^-1) 
-          = 62415.09074/(n_2d * mu) ohm/square
 
         Parameters
         ----------
-        n_2d : 1D float array (unit: nm^-2)
-            Array containing carrier density data for compositions. This can be
-            a single number as well. Then all compositions will have same carrier
-            density.
-        mobility : 1D float array (unit: cm^2 V^-1 s^-1)
-            Array containing mobility data for compositions.
+        n_2d : float/ndarray (unit: 10^12 cm^-2)
+            Array containing carrier density data. 
+        mobility : float/ndarray (unit: cm^2 V^-1 s^-1)
+            Array containing mobility data.
 
         Returns
         -------
-        1D float array (unit: ohm/square)
-            Sheet resistance for compositions.
+        float/ndarray (unit: ohm/square)
+            Sheet resistance.
 
         """
         return self._calculate_sheet_resitance(n_2d, mobility)
@@ -371,39 +359,23 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
                                    mode:str='LFOM', T_corect_bandgap:bool=False, 
                                    direct_bandgap:bool=True, indirect_bandgap:bool=False):
         """
-        This function calculates the figure-of-merit (FOM). Available FOMs are
-        LFOM: Lateral figure-of-merit
+        This function calculates the figure-of-merit (FOM). Available FOMs are:
+            LFOM: Lateral figure-of-merit (LFOM = e*n_2d*mu*E_cr^2 ). Here, 
+                critical_electric_field is assumed related to bandgap following
+                Ref: J. L. Hudgins, G. S. Simin, E. Santi and M. A. Khan, 
+                "An assessment of wide bandgap semiconductors for power devices," 
+                in IEEE Transactions on Power Electronics, vol. 18, no. 3, pp. 907-914, 
+                May 2003, doi: 10.1109/TPEL.2003.810840.
         
-        Ref: J. L. Hudgins, G. S. Simin, E. Santi and M. A. Khan, 
-        "An assessment of wide bandgap semiconductors for power devices," 
-        in IEEE Transactions on Power Electronics, vol. 18, no. 3, pp. 907-914, 
-        May 2003, doi: 10.1109/TPEL.2003.810840.
-        
-        direct_bandgap_critical_electric_field = 1.73e5*(bandgap_**2.5) # V/cm
-        indirect_bandgap_critical_electric_field = 2.38e5*(bandgap_**2.5) # V/cm
-        
-        Units:
-        bandgap_ => in eV.
-        temp => in K
-        n_2d => in nm^-2
-        E_cr => in V/cm
-        e => 1.602176634e-19 C
-        mobility (mu) => cm^2 V^-1 s^-1
-        
-        
-        LFOM = e*n_2d*mu*E_cr^2 = 1.602e-19 C * 1e14 cm^-2 * cm^2 V^-1 s^-1 * V^2cm^-2
-                                = 1.602e-5 CVs^-1cm^-2
-                                = 1.602e-5 Wcm^-2    #1 watts = 1 coulombs*volt/second
-                                = 1.602e-11 MW/cm^2
-        
+                direct_bandgap_critical_electric_field = 1.73e5*(bandgap_**2.5) # V/cm
+                indirect_bandgap_critical_electric_field = 2.38e5*(bandgap_**2) # V/cm
+
         Parameters
         ----------
-        n_2d : 1D float array (unit: nm^-2)
-            Array containing carrier density data for compositions. This can be
-            a single number as well. Then all compositions will have same carrier
-            density.
+        n_2d : 1D float array (unit: 10^12 cm^-2)
+            Array containing carrier density data.
         mobility : 1D float array (unit: cm^2 V^-1 s^-1)
-            Array containing mobility data for compositions.
+            Array containing mobility data.
         temp : float, optional (unit: K)
             Temperature for band gap correction. The default is 300K.
         mode : str, optional (['LFOM'])
@@ -413,7 +385,7 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
         direct_bandgap : bool, optional
             If the bandgap is direct bandgap or not. The default is True.
         indirect_bandgap : bool, optional
-            If the bandgap is indirect bandgap or not.. The default is False.
+            If the bandgap is indirect bandgap or not. The default is False.
 
         Returns
         -------
@@ -441,7 +413,7 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
     """
     
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', psedomorphic_strain=False, substrate=None,
+                 system='ternary', psedomorphic_strain:bool=True, substrate=None,
                  alloy_type='WZ', eps_n_3d=1e-14, print_log=None):
         """
         Initialization function of the class Mobility3DCarrier.
@@ -465,7 +437,7 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             The default is 'ternary'.
         psedomorphic_strain : bool, optional
             Whether to consider pseudomorphic strain.
-            The default is False.
+            The default is True.
         substrate : string or float, optional (unit: Angstrom)
             The substrate name (if string, warning: the name should be in the database) 
             or the substrate in-plane lattice parameter (if float, Angstrom unit).
@@ -498,14 +470,83 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
                                   print_log=print_log, eps_n=eps_n_3d)
         _Mobility3DCarrier.__init__(self)
         
-    def calculate_3D_mobility(self, n_3d=1, n_dis=1, f_dis=0.5, T=300,
+    def calculate_3DEC_props(self, n_d, T:float=300, f_dis:float=1.0, 
+                             inverse_half_FD_method:str='JD_approx'):
+        """
+        This function calculates some general properties of 3D carrier. The calculated properties include
+        scaled Fermi energy (eta_f =E_f/kB.T); ratio of classical (or momentum or transport)
+        scateering time, tau_c, to quantum scattering time, tau_q, due to charged dislocation scattering. 
+        
+        eta_f: Tells where in the bandgap the Fermi level is.
+        
+        tau_c/tau_q|_dis: Tells the anisotropicity of the scattering. For isotropic scattering
+                          the ratio is ~1 (e.g. non-Coulombic scatterings). For anisotropic scattering 
+                          the ratio >> 1 (e.g. charged dislocation, impurity scattering. Coulombic scatterings
+                          are in general long range and are of this type.) It assumes degenerate electron gas.
+                          The implementation is based on DJ. and UKM., PRB 66, 241307(R) (2002) 
+                          and DJ. et al., PRB 67, 153306 (2003).
+
+        Parameters
+        ----------
+        n_d : float or 1D float array (unit: 1e18 cm^-3)
+            Volumetric carrier density data. 
+            If array, array size should be same as composition arrary. 
+        T : float, optional (unit: K)
+            Temperature at which Fermi-Dirac integral calculations will be done. 
+            The default is 300K.
+        f_dis : float, optional (unit: unitless)
+            Fraction of dislocation that contributes in scattering. This will be
+            used in tau_c/tau_q ratio calculation for dislocation.
+            The default is 1.0.
+        inverse_half_FD_method : str, optional [available: 'JD_approx', 'minimax_piecewise']
+            The approximate method to calculate the scaled Fermi energy (E_f/k_BT) 
+            using inverse Fermi-Dirac integral of order-1/2. The default is JD_approx.
+            JD_approx : Joyce-Dixon approximation (APL 31, 354 (1977)).
+            minimax_piecewise : minimax approximation (Applied Mathematics and 
+                                                       Computation 259, 698 (2015))
+            
+        Returns
+        -------
+        scaled_Ef : float or 1d array of float (unit: unitless)
+            Fermi level w.r.t conduction band scaled w.r.t k_BT (scaled_Ef = E_f/kB.T).
+        E_f : float or 1d array of float (unit: eV)
+            Fermi level w.r.t conduction band.
+        Fermi_wave_vector : float or 1d array of float (unit: cm^-1)
+            Fermi wave vector.
+        Fermi_energy : float or 1d array of float (unit: eV)
+            Fermi energy. This fundamentally assumes metallic 3DEG.
+        Thomas_Fermi_screening_len : float or or 1d array of float (unit: cm)
+            Thomas Fermi screening length.
+        tau_c_by_tau_q_dis : float or 1d array of float (unit: unitless)
+            The tau_c/Tau_q ratio for charged dislocation (classical by quantum scattering time).
+
+        """
+        if inverse_half_FD_method not in ['JD_approx']:
+            raise ValueError(f'Requested {inverse_half_FD_method} method is not implemeted yet. Contact developer.')
+        scaled_Ef = _FermiDiracInt._cal_eta_from_inv_FD(n_d, self.alloy_params_.get('e_effective_mass'), 
+                                                        T=T, method=inverse_half_FD_method)
+        E_f = 8.617333262145179e-05 * T * scaled_Ef # k_B J.K^-1 = k_B/e_charge eV.K^-1
+        print(f'Fermi level w.r.t conduction band using {inverse_half_FD_method}, E_f = {E_f: 0.6 eV}')
+        Fermi_wave_vector, Fermi_energy, Thomas_Fermi_screening_len, \
+                tau_c_by_tau_q_dis = self._ratio_dis_tc_tq(n_d, 
+                                                           self.alloy_params_.get('static_dielectric_constant'),
+                                                           self.alloy_params_.get('e_effective_mass'), 
+                                                           f_dis=f_dis)
+        print(f'tau_c/tau_q ratio for dislocation = {tau_c_by_tau_q_dis}')
+        return(scaled_Ef, E_f, Fermi_wave_vector, Fermi_energy, 
+               Thomas_Fermi_screening_len, tau_c_by_tau_q_dis)
+        
+    def calculate_3D_mobility(self, n_3d=1, n_dis:float=1, f_dis:float=0.5, T:float=300,
                               alloy_disordered_effect:bool=False,
                               dislocation_effect:bool=False,
                               piezoelectric_effect:bool=False,
                               acoustic_phonon_effect:bool=False,
                               polar_optical_phonon_effect:bool=False,
                               total_mobility:bool=True,
-                              calculate_total_mobility_only:bool=False
+                              calculate_total_mobility_only:bool=False, 
+                              mobility_model_version:str='v1',
+                              inverse_half_FD_method:str='JD_approx',
+                              use_numerical_FD_integration:bool=False
                               ):
         """
         This function calculates the sheet mobility from different scattering contributions.
@@ -521,22 +562,13 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             Piezoelectric effect (PE)
             Acoustic phonon (AP) : Deformation potential mediated
             Polar optical phonon (POP)
-        
-        Units:
-            n_3d => in 1e18 cm^-3
-            c_lattice => in A
-            a_lattice => in A
-            sc_potential => in eV
-            n_dis => 1e10 cm^-2
-            f_dis => unit less
-            E_pop => eV
 
         Parameters
         ----------
         n_3d : 1D float array, optional (unit: 1e18 cm^-3)
             Array containing carrier density data for compositions. Array size
             should be same as composition arrary. The default is 1.
-        n_dis : float, optional (unit: 1e10 cm^-2)
+        n_dis : float, optional (unit: 1e8 cm^-2)
             Threading dislocation density. The default is 1.
         f_dis : float, optional (unit: unitless)
             Fraction of dislocation that contributes in scattering. 
@@ -566,6 +598,20 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         calculate_total_mobility_only : 
             Calculate only the total mobility. If False the return data also contains individual 
             specified contributions.
+        mobility_model_version : str, optional [options: 'v1']
+            Which mobility model to use. The default is 'v1'.
+        inverse_half_FD_method : str, optional [available: 'JD_approx', 'minimax_piecewise']
+            The approximate method to calculate the scalled Fermi energy (E_f/k_BT) 
+            using inverse Fermi-Dirac integral of order-1/2. The default is JD_approx.
+            JD_approx : Joyce-Dixon approximation (APL 31, 354 (1977)).
+            minimax_piecewise : minimax approximation (Applied Mathematics and 
+                                                       Computation 259, 698 (2015))
+        use_numerical_FD_integration : bool, optional
+            Compute the integration numerically, using scipy.quad. If False, 
+            polylogaritm approach is used for FD_order > 1. For FD_order = 1 
+            dilogarithm formulation is used.For FD_order=0, analytical solution 
+            is used always.
+            The default is False. 
 
         Returns
         -------
@@ -581,31 +627,10 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         self.polar_optical_phonon_effect_=polar_optical_phonon_effect
         self.only_total_mobility = calculate_total_mobility_only
         self.total_mobility_=total_mobility
+        self.mobility_model_=mobility_model_version
+        self.inverse_half_FD_method_ = inverse_half_FD_method 
+        self.use_numerical_FD_integration_ = use_numerical_FD_integration
         return self._calculate_3d_mobility(n_3d=n_3d, n_dis=n_dis, f_dis=f_dis, T=T)
-
-    def Dislocation_3D_Tc_Tq_ratio(self, eps_s, n_3d, m_star):
-        """
-        Calculate the ratio of classical (or momentum) tp quantum scattering times
-        due to charged dislocation scattering.
-        
-        Ref: DJ. and UKM., PRB 66, 241307(R) (2002) and DJ. et al., PRB 67, 153306 (2003) 
-
-        Parameters
-        ----------
-        eps_s : float or 1d array of float (unit: epsilon_0)
-            Static dielectic constants of the material. In the unit of vacumm permitivity.
-        n_3d : float or 1d array of float (unit: 1E18 cm^-3 )
-            3DEG density.
-        m_star : float or 1d array of float (unit: m0)
-            Carrier effective mass. In the unit of m0.
-
-        Returns
-        -------
-        float or 1d array of float (unitless)
-            The tau_c/Tau_q ratio (classical by quantum scattering time).
-
-        """
-        return self._ratio_dis_tc_tq(eps_s, n_3d, m_star)
 
 class Plottings(_plot_mobilities):  
     """
@@ -631,7 +656,7 @@ class Plottings(_plot_mobilities):
                 show_legend:bool=False, show_colorbar:bool=False, colorbar_label:str=None, 
                 savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):  
         """
-        
+        This function plots 2d plot when providing corresponding x and y values as data2plot.
 
         Parameters
         ----------
@@ -710,13 +735,13 @@ class Plottings(_plot_mobilities):
     
     def plot_2d_carrier_mobilities(self, mobility_dataframe, fig=None, ax=None, save_file_name=None, CountFig=None, ymin=None, 
                                    ymax=None, xmax=None, xmin=None, y_scale_log:bool=True, mode:str= '2d_carrier_mobility',
-                                   title_text:str=None, mobility_model:str='Bassaler', annotate_pos=(0,0), annotatetextoffset=(0,-20),
+                                   title_text:str=None, mobility_model:str='v2', annotate_pos=(0,0), annotatetextoffset=(0,-20),
                                    yaxis_label:str=r'$\mu$ ($\mathrm{cm}^2\mathrm{V}^{-1}\mathrm{s}^{-1}$)',
                                    xaxis_label:str='Composition', color=None, color_map='viridis', show_legend:bool=False, 
                                    show_right_ticks:bool=False, show_colorbar:bool=False, colorbar_label:str=None, 
                                    savefig:bool=True, vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
         """
-        This function plots the results.
+        This function plots different mobility values with compositions.
 
         Parameters
         ----------
@@ -746,9 +771,9 @@ class Plottings(_plot_mobilities):
             Which plotting mode to use. The options are 
             '2d_carrier_mobility': To plot 2d mobility plots
             'plane_2d': general 2d plots.
-        mobility_model :  str, optional
+        mobility_model :  str, optional [options: 'v1', 'v2']
             Which mobility model used to generate results. The data structure is 
-            different for different mobility models. The default is 'Bassaler'.
+            different for different mobility models. The default is 'v2'.
         annotate_pos : tuple, optional
             To add annotation at position on the plot. The default is (0,0).
         annotatetextoffset : tuple, optional
@@ -758,7 +783,7 @@ class Plottings(_plot_mobilities):
         title_text : str, optional
             Title of the figure. The default is None.
         yaxis_label : str, optional
-            Y-axis label text. The default is 'mu (cm^2V^-1s-1$)'.
+            Y-axis label text. The default is 'mu (cm^2V^-1s^-1)'.
         xaxis_label : str, optional
             x-axis label text. The default is 'Composition'.
         color : str/color, optional
