@@ -46,25 +46,16 @@ class _Mobility3DCarrier:
         The considered scattering mechanism are:
             Alloy disorder limited (AD)
             Threading dislocation mediated (DIS)
-            Piezoelectric effect (PE)
-            Acoustic phonon (AP) : Deformation potential mediated
+            Piezoelectric phonon effect (PE)
+            Acoustic deformation potential phonon (ADP)
             Polar optical phonon (POP)
-        
-        Units:
-            n_3d => in 1e18 cm^-3
-            c_lattice => in A
-            a_lattice => in A
-            sc_potential => in eV
-            n_dis => 1e10 cm^-2
-            f_dis => unit less
-            E_pop => eV
 
         Parameters
         ----------
         n_3d : 1D float array, optional (unit: 1e18 cm^-3)
             Array containing carrier density data for compositions. Array size
             should be same as composition arrary. The default is 1.
-        n_dis : float, optional (unit: 1e10 cm^-2)
+        n_dis : float, optional (unit: 1e8 cm^-2)
             Threading dislocation density. The default is 1.
         f_dis : float, optional (unit: unitless)
             Fraction of dislocation that contributes in scattering. 
@@ -123,7 +114,7 @@ class _Mobility3DCarrier:
                 if self.print_info is not None: print('\t-- Calculating acoustic phonon effect mobility')
                 _mu_contrib = self._ac_dp_mu()
                 total_inv_mu += 1/_mu_contrib
-                mobility['AP'] = _mu_contrib
+                mobility['ADP'] = _mu_contrib
                 
             if self.piezoelectric_effect_:
                 if self.print_info is not None: print('\t--- Calculating piezoelectric phonon effect mobility')
@@ -142,7 +133,7 @@ class _Mobility3DCarrier:
                 mobility['TOT'] = 1/total_inv_mu
                 
         if self.print_info is not None: print(f'{"="*72}')
-        return pd.DataFrame.from_dict(mobility, orient='index')
+        return pd.DataFrame.from_dict(mobility)
     
     def _ln_1p_exp_xi(self):
         """
@@ -156,8 +147,8 @@ class _Mobility3DCarrier:
     ## Alloy disordered limited mobility
     def _alloy_disorder_mu(self, eps_den = 1e-8):        
         demoninator_ = self.m_star_*self.sc_potential_*self.sc_potential_*self.omega \
-                       *self.n_3d*self.comp_*(1.0-self.comp_)          
-        # Remove small values for both the n_3d and comp_ or (1-comp_)
+                       *self.n_3d_*self.comps_*(1.0-self.comps_)          
+        # Remove small values for both the n_3d and comps_ or (1-comps_)
         demoninator_ = np.where(demoninator_ < eps_den, np.nan, demoninator_)
         #fact_ad_3d = 21.16990563011839 # (2*e*h_bar*k_B)/(3*pi*m0*e^2) * 1e10 => cm^-2.K^-1.V-1.s-1
         return 21.16990563011839 * self.temp_ * self._ln_1p_exp_xi() / demoninator_ # cm^2.V^-1.s^-1
@@ -174,7 +165,7 @@ class _Mobility3DCarrier:
     def _ac_dp_mu(self):
         #2*h_bar*e*1e-2/(3*pi*m0*e*e*1e18) = 1.53333002306295e-06 # cm^2V^-1s^-1
         numerator = self.mass_density_ * self.v_LA * self.v_LA * self._ln_1p_exp_xi() * 1.53333002306295e-06
-        return numerator / (self.n_3d*self.m_star_*self.E_d*self.E_d)
+        return numerator / (self.n_3d_*self.m_star_*self.E_d*self.E_d)
     
     ## Piezoelectric phonon scattering limited mobility
     def _mu_pz(self):
@@ -186,19 +177,12 @@ class _Mobility3DCarrier:
                                                         FD_order = 'one',
                                                         use_numerical_integration =
                                                         self.use_numerical_FD_integration_)
-        return self.temp_*self.eps_s_*FD_1*0.12282713258060055/(self.n_3d*self.K_sqr)
+        return self.temp_*self.eps_s_*FD_1*0.12282713258060055/(self.n_3d_*self.K_sqr)
     
     ## Dislocation limited mobility
-    def _dis_mu(self):
-        #(3*pi_*pi_)**(1/3) = 3.0936677262801355e6 cm^-1
-        fermi_wave_vect = 3.0936677262801355*(self.n_3d**(1/3)) # 1e6 cm^-1
-        fermi_wave_vect_sq = fermi_wave_vect*fermi_wave_vect # 1e12 cm^-2
-        # h_bar*h_bar/2/e_mass*1e12 = 6.10426432246119e-27 J^2s^2cm^-2kg^-1
-        fermi_energy = 6.10426432246119*fermi_wave_vect_sq/self.m_star_ # 1e-27 J^2s^2cm^-2kg^-1
-        # 2*eps_0/3/e_charge/e_charge*1e-43 = 2.2995173111302578e-17 cm^2
-        TF_screening_len_sq = 2.2995173111302578*self.eps_s_*fermi_energy/self.n_3d # 1e-17 cm^2
-        # k_f^2*lamda_TF^2 => 1e-5
-        fact_12 = (1+4*fermi_wave_vect_sq*TF_screening_len_sq*1e-5)**(3/2)/TF_screening_len_sq**2
-        # h_bar*h_bar*h_bar*eps_0*eps_0/e_charge**3/e_mass**2*1e22/1e10 = 26941.18974076079
-        fact_11 = (self.eps_s_*self.c_lp/self.f_dislocation_/self.m_star_)**2 / self.n_dislocation_
-        return fact_11 * fact_12 * 26941.18974076079
+    def _dis_mu(self):    
+        #4k_F^2 lambda^2 = 4*3**(1/3)*h_bar**2*pi_**(8/3)*eps_0/e_charge**2/e_mass*1e8 = 0.051430964880517044
+        fact_12 = (1+0.051430964880517044*self.n_3d_**(1/3)*self.eps_s_/self.m_star_)**(3/2)
+        # e_charge*3**(2/3)/(h_bar*pi_**(8/3))*1e-12 = 149.27327984905628 cm^2V^-1s^-1
+        return 149.27327984905628 * self.c_lp * self.n_3d_**(2/3) * fact_12 \
+                / self.n_dislocation_ / self.f_dislocation_**2  

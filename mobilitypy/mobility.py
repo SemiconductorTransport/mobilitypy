@@ -159,7 +159,7 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
             The substrate name (if string, warning: the name should be in the database) 
             or the substrate in-plane lattice parameter (if float, Angstrom unit).
             The default is None. Error will be raised if substrate=None and 
-            psedomorphic_strain=True.
+            pseudomorphic_strain=True.
         alloy_type :  str, optional 
             The crystal type of alloy. This will be considered when calculating
             parameters like Poisson ratio etc.
@@ -262,6 +262,12 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
         acoustic_phonon_effect : bool, optional
             Whether to calculate acoustic phonon effect mediated mobility. Or, whether to include 
             this contribution in total mobility calculation. The default is False.
+            acoustic_phonon_effect combines deformation_potential and piezoelectric_effect.
+            NOTE: One can use deformation_potential_effect=True, piezoelectric_effect=True, and
+            acoustic_phonon_effect=True, to return all three contrbutions separately in
+            the output. In the implementation it has been made sure that this setup
+            does NOT double count the  deformation_potential and piezoelectric_effect;
+            So, NO WORRIES!
         polar_optical_phonon_effect : bool, optional
             Whether to calculate polar optical phonon effect mediated mobility. Or, whether to include 
             this contribution in total mobility calculation. The default is False.
@@ -413,7 +419,7 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
     """
     
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', psedomorphic_strain:bool=True, substrate=None,
+                 system='ternary', pseudomorphic_strain:bool=True, substrate=None,
                  alloy_type='WZ', eps_n_3d=1e-14, print_log=None):
         """
         Initialization function of the class Mobility3DCarrier.
@@ -435,14 +441,14 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         system : string (case sensitive), optional
             Type of the alloy. E.g. 'ternary'. 
             The default is 'ternary'.
-        psedomorphic_strain : bool, optional
+        pseudomorphic_strain : bool, optional
             Whether to consider pseudomorphic strain.
             The default is True.
         substrate : string or float, optional (unit: Angstrom)
             The substrate name (if string, warning: the name should be in the database) 
             or the substrate in-plane lattice parameter (if float, Angstrom unit).
             The default is None. Error will be raised if substrate=None and 
-            psedomorphic_strain=True.
+            pseudomorphic_strain=True.
         alloy_type :  str, optional (case insensitive)
             The crystal type of alloy. This will be considered when calculating
             parameters like Poisson ratio etc.
@@ -462,10 +468,10 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         None.
 
         """
-        if (psedomorphic_strain == True) and (substrate is None):
-            raise ValueError('substrate tag can not be None when psedomorphic_strain=True.')
+        if (pseudomorphic_strain == True) and (substrate is None):
+            raise ValueError('substrate tag can not be None when pseudomorphic_strain=True.')
         _MobilityCarrier.__init__(self, compositions=compositions, binaries=binaries, 
-                                  alloy=alloy, system=system, psedomorphic_strain=psedomorphic_strain, 
+                                  alloy=alloy, system=system, pseudomorphic_strain=pseudomorphic_strain, 
                                   substrate=substrate,alloy_type=alloy_type,
                                   print_log=print_log, eps_n=eps_n_3d)
         _Mobility3DCarrier.__init__(self)
@@ -511,30 +517,34 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             Fermi level w.r.t conduction band scaled w.r.t k_BT (scaled_Ef = E_f/kB.T).
         E_f : float or 1d array of float (unit: eV)
             Fermi level w.r.t conduction band.
-        Fermi_wave_vector : float or 1d array of float (unit: cm^-1)
+        Fermi_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
             Fermi wave vector.
         Fermi_energy : float or 1d array of float (unit: eV)
             Fermi energy. This fundamentally assumes metallic 3DEG.
-        Thomas_Fermi_screening_len : float or or 1d array of float (unit: cm)
-            Thomas Fermi screening length.
+        _Thomas_Fermi_screening_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
+            Thomas Fermi screening wave vector.
         tau_c_by_tau_q_dis : float or 1d array of float (unit: unitless)
             The tau_c/Tau_q ratio for charged dislocation (classical by quantum scattering time).
+        pop_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
+            Polar optical phonon wave vector.
 
         """
-        if inverse_half_FD_method not in ['JD_approx']:
+        if inverse_half_FD_method not in ['JD_approx', 'minimax_piecewise']:
             raise ValueError(f'Requested {inverse_half_FD_method} method is not implemeted yet. Contact developer.')
         scaled_Ef = _FermiDiracInt._cal_eta_from_inv_FD(n_d, self.alloy_params_.get('e_effective_mass'), 
                                                         T=T, method=inverse_half_FD_method)
         E_f = 8.617333262145179e-05 * T * scaled_Ef # k_B J.K^-1 = k_B/e_charge eV.K^-1
         print(f'Fermi level w.r.t conduction band using {inverse_half_FD_method}, E_f = {E_f: 0.6 eV}')
-        Fermi_wave_vector, Fermi_energy, Thomas_Fermi_screening_len, \
-                tau_c_by_tau_q_dis = self._ratio_dis_tc_tq(n_d, 
+        Fermi_wave_vector, Fermi_energy, Thomas_Fermi_screening_wv, \
+        tau_c_by_tau_q_dis, pop_wave_vector = self._3deg_properties(n_d, 
                                                            self.alloy_params_.get('static_dielectric_constant'),
                                                            self.alloy_params_.get('e_effective_mass'), 
+                                                           self.alloy_params_.get('PO_phonon_energy'),
                                                            f_dis=f_dis)
         print(f'tau_c/tau_q ratio for dislocation = {tau_c_by_tau_q_dis}')
         return(scaled_Ef, E_f, Fermi_wave_vector, Fermi_energy, 
-               Thomas_Fermi_screening_len, tau_c_by_tau_q_dis)
+               Thomas_Fermi_screening_wv, tau_c_by_tau_q_dis, 
+               pop_wave_vector)
         
     def calculate_3D_mobility(self, n_3d=1, n_dis:float=1, f_dis:float=0.5, T:float=300,
                               alloy_disordered_effect:bool=False,
@@ -560,7 +570,7 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             Alloy disorder limited (AD)
             Threading dislocation mediated (DIS)
             Piezoelectric effect (PE)
-            Acoustic phonon (AP) : Deformation potential mediated
+            Acoustic deformation potential phonon (ADP)
             Polar optical phonon (POP)
 
         Parameters

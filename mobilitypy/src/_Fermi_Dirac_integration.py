@@ -153,7 +153,7 @@ class _FermiDiracInt:
                 # quad is not vectorized. So vectorize the integrand function first.
                 vec_FD1_quad = np.vectorize(cls._FD1_quad)
                 return vec_FD1_quad(eta_f)
-        return (-1) * special.spence(1+np.exp(eta_f))
+        return (-1) * special.spence(1.0+np.exp(eta_f))
        
     @classmethod
     def _cal_Fermi_Dirac_integral(cls, n_d, m_star, T:float=300, 
@@ -199,13 +199,13 @@ class _FermiDiracInt:
 
         """
         # Fermi eta = E_f/(k_B.T)
-        eta_f = cls._cal_eta_for_FD_integral(n_d, m_star, T=T, method=inv_half_FD_method)
+        eta_f = cls._cal_eta_from_inv_FD(n_d, m_star, T=T, method=inv_half_FD_method)
         
         if FD_order == 'zero':
-            #return np.log(1+np.exp(eta_f))
+            return np.log(1+np.exp(eta_f))
             # np.logaddexp(a,b) = np.log(exp(a)+exp(b)) => better stable in log operation
-            return np.logaddexp(0,eta_f)
+            #return np.logaddexp(0,eta_f) # Produce warning when nan encounter 
         if FD_order == 'one':
-            cls._FD_integral_order_1(eta_f, use_numerical_int=use_numerical_integration)
+            return cls._FD_integral_order_1(eta_f, use_numerical_int=use_numerical_integration)
         else:
             raise ValueError(f'{FD_order} FD integral is not implemented yet. Contact developer.')

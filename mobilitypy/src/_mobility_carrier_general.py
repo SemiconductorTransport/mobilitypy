@@ -47,7 +47,7 @@ class _MobilityCarrier(_AlloyParams):
             The substrate name (if string, warning: the name should be in the database) 
             or the substrate in-plane lattice parameter (if float, Angstrom unit).
             The default is None. Error will be raised if substrate=None and 
-            psedomorphic_strain=True.
+            pseudomorphic_strain=True.
         alloy_type :  str, optional 
             The crystal type of alloy. This will be considered when calculating
             parameters like Poisson ratio etc.
@@ -69,7 +69,7 @@ class _MobilityCarrier(_AlloyParams):
 
         """
         if (pseudomorphic_strain == True) and (substrate is None):
-            raise ValueError('substrate tag can not be None when psedomorphic_strain=True.')
+            raise ValueError('substrate tag can not be None when pseudomorphic_strain=True.')
         
         self.print_info = print_log
         if self.print_info is not None: self.print_info = self.print_info.lower()
@@ -171,7 +171,7 @@ class _MobilityCarrier(_AlloyParams):
         return bandgap_0 - (bandgap_alpha*temp*temp/(temp+bandgap_beta))
     
     @staticmethod
-    def _ratio_dis_tc_tq(n_3d, eps_s, m_star, f_dis:float=1.0):
+    def _3deg_properties(n_3d, eps_s, m_star, pop_en, f_dis:float=1.0):
         """
         Calculate the ratio of classical (or momentum) tp quantum scattering times
         due to charged dislocation scattering. It assumes degenerate electron gas.
@@ -183,9 +183,11 @@ class _MobilityCarrier(_AlloyParams):
         n_3d : float or 1d array of float (unit: 1E18 cm^-3 )
             Volumetric carrier density.
         eps_s : float or 1d array of float (unit: epsilon_0)
-            Static dielectic constants of the material. In the unit of vacumm permitivity.
+            Static dielectic constants of the material. 
         m_star : float or 1d array of float (unit: m0)
-            Carrier effective mass. In the unit of m0.
+            Carrier effective mass. 
+        pop_en : float or 1d array of float (unit: eV)
+            Polar optical phonon energy.
         f_dis : float, optional (unit: unitless)
             Fraction of dislocation that contributes in scattering. This will be
             used in tau_c/tau_q ratio calculation for dislocation.
@@ -193,23 +195,27 @@ class _MobilityCarrier(_AlloyParams):
             
         Returns
         -------
-        _Fermi_wave_vector : float or 1d array of float (unit: cm^-1)
+        _Fermi_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
             Fermi wave vector.
         _Fermi_energy : float or 1d array of float (unit: eV)
             Fermi energy. This fundamentally assumes metalic 3DEG.
-        _Thomas_Fermi_screening_len : float or 1d array of float (unit: cm)
-            Thomas Fermi screening length.
+        _Thomas_Fermi_screening_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
+            Thomas Fermi screening wave vector.
         tau_c_by_tau_q_dis : float or 1d array of float (unit: unitless)
             The tau_c/Tau_q ratio for charged dislocation (classical by quantum scattering time).
+        _pop_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
+            Polar optical phonon wave vector.
 
         """
         # (3*pi_*pi_*1e18)**(1/3) = 3093667.7262801332
-        _Fermi_wave_vector = 3093667.7262801332 * n_3d**(1/3) # cm^-1
-        # h_bar**2*1e4/2/e_mass/e_charge = 3.809982110968585e-16
-        _Fermi_energy = 3.809982110968585e-16 * _Fermi_wave_vector**2 / m_star # eV
+        _Fermi_wave_vector = 3.0936677262801333 * n_3d**(1/3) # 1e6 cm^-1
+        # h_bar**2*1e4/2/e_mass/e_charge*1e12 = 0.0003809982110968585
+        _Fermi_energy = 0.0003809982110968585 * _Fermi_wave_vector**2 / m_star # eV
         # 10*np.sqrt(h_bar**2*eps_0*pi_**(4/3)/(3**(1/3)*e_charge**2*e_mass*1e6)) = 3.665292799274651e-08
-        _Thomas_Fermi_screening_len = 3.665292799274651e-08 * np.sqrt(eps_s/m_star/(n_3d**(1/3))) # cm
+        _Thomas_Fermi_screening_len = 0.03665292799274651 * np.sqrt(eps_s/m_star/(n_3d**(1/3))) # 1e-6 cm
         #2*eps_0*h_bar**2*pi_**(8/3)*3**(1/3)/e_charge/e_charge/e_mass*1e8 = 0.025715482457837318
         tau_c_by_tau_q_dis = (1 + 0.025715482457837318*eps_s*n_3d**(1/3)/m_star)/(f_dis**2)
-        return (_Fermi_wave_vector, _Fermi_energy, _Thomas_Fermi_screening_len, 
-                tau_c_by_tau_q_dis)
+        # np.sqrt(2*e_mass*e_charge/h_bar**2)*1e-2 = 51.23167223161843 # 1e6 cm^-1
+        _pop_wave_vector = 51.23167223161843 * np.sqrt(m_star*pop_en)
+        return (_Fermi_wave_vector, _Fermi_energy, 1/_Thomas_Fermi_screening_len, 
+                tau_c_by_tau_q_dis, _pop_wave_vector)
