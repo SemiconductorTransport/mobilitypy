@@ -1,5 +1,5 @@
 from .src import _DataBase, _AlloyParams, _FermiDiracInt, _MobilityCarrier
-from .src import _Mobility2DCarrier, _Mobility3DCarrier, _FermiDiracInt
+from .src import _Mobility2DCarrier, _Mobility3DCarrier
 from .utilities import _plot_mobilities
 import numpy as np
 
@@ -30,6 +30,7 @@ class DataBase(_DataBase):
 
         """
         self.dtbase._print_database(for_material=for_material)
+        return
         
     def update_database(self, for_material=None, with_new_database=None):
         """
@@ -56,6 +57,7 @@ class DataBase(_DataBase):
         """
         self.dtbase._update_database(for_material=for_material, 
                                      with_new_database=with_new_database)
+        return
         
 class AlloyParams(_AlloyParams):
     '''
@@ -412,10 +414,6 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
     Note: Some of the equations in the references has prining mistakes. The mistakes
     are corrected in our implementation. 
     
-    Ref-1: Rajan et al., Appl. Phys. Lett. 88, 042103 (2006) => alloy disorder, polar optical phonon
-    Ref-2: DJ. and UKM., PRB 66, 241307(R) (2002) and DJ. et al., PRB 67, 153306 (2003)  => Dislocation
-    Ref-3: Debdeep Jena's thesis, Chapter-6 APPENDIX, Sec. Three-dimensional carriers => Acoustic phonon 
-    
     """
     
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
@@ -476,21 +474,9 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
                                   print_log=print_log, eps_n=eps_n_3d)
         _Mobility3DCarrier.__init__(self)
         
-    def calculate_3DEC_props(self, n_d, T:float=300, f_dis:float=1.0, 
-                             inverse_half_FD_method:str='JD_approx'):
+    def calculate_3DEC_props(self, n_d, T:float=300, inverse_half_FD_method:str='minimax_piecewise'):
         """
-        This function calculates some general properties of 3D carrier. The calculated properties include
-        scaled Fermi energy (eta_f =E_f/kB.T); ratio of classical (or momentum or transport)
-        scateering time, tau_c, to quantum scattering time, tau_q, due to charged dislocation scattering. 
-        
-        eta_f: Tells where in the bandgap the Fermi level is.
-        
-        tau_c/tau_q|_dis: Tells the anisotropicity of the scattering. For isotropic scattering
-                          the ratio is ~1 (e.g. non-Coulombic scatterings). For anisotropic scattering 
-                          the ratio >> 1 (e.g. charged dislocation, impurity scattering. Coulombic scatterings
-                          are in general long range and are of this type.) It assumes degenerate electron gas.
-                          The implementation is based on DJ. and UKM., PRB 66, 241307(R) (2002) 
-                          and DJ. et al., PRB 67, 153306 (2003).
+        This function calculates some general properties of 3D carrier. 
 
         Parameters
         ----------
@@ -500,10 +486,6 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         T : float, optional (unit: K)
             Temperature at which Fermi-Dirac integral calculations will be done. 
             The default is 300K.
-        f_dis : float, optional (unit: unitless)
-            Fraction of dislocation that contributes in scattering. This will be
-            used in tau_c/tau_q ratio calculation for dislocation.
-            The default is 1.0.
         inverse_half_FD_method : str, optional [available: 'JD_approx', 'minimax_piecewise']
             The approximate method to calculate the scaled Fermi energy (E_f/k_BT) 
             using inverse Fermi-Dirac integral of order-1/2. The default is JD_approx.
@@ -511,40 +493,45 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             minimax_piecewise : minimax approximation (Applied Mathematics and 
                                                        Computation 259, 698 (2015))
             
-        Returns
-        -------
-        scaled_Ef : float or 1d array of float (unit: unitless)
-            Fermi level w.r.t conduction band scaled w.r.t k_BT (scaled_Ef = E_f/kB.T).
-        E_f : float or 1d array of float (unit: eV)
-            Fermi level w.r.t conduction band.
-        Fermi_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
-            Fermi wave vector.
+        Returns : tuple of lists/scalar 
+        -------        
+        Scaled_Fermi_energy : float or 1d array of float (unit: unitless)
+            Fermi energy w.r.t conduction band w.r.t k_BT.
+            general case: inverse Fermi-Dirac integral approach.
+            degenerate case: assumes metallic ('degenerate') carriers.
+            return : [general case, degenerate case]
         Fermi_energy : float or 1d array of float (unit: eV)
-            Fermi energy. This fundamentally assumes metallic 3DEG.
-        _Thomas_Fermi_screening_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
-            Thomas Fermi screening wave vector.
-        tau_c_by_tau_q_dis : float or 1d array of float (unit: unitless)
+            Fermi energy w.r.t conduction band. 
+            general case: inverse Fermi-Dirac integral approach.
+            degenerate case: assumes metallic ('degenrate') carriers.
+            return : [general case, degenerate case]
+        Screening_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
+            Screening wave vector. 
+            return : [general,Thomas-Fermi,  Debye]
+        tau_c_by_tau_q_dis : list of float or 1d array of float list (unit: unitless)
             The tau_c/Tau_q ratio for charged dislocation (classical by quantum scattering time).
+            return : [degenerate case, non degenerate case]
+        Fermi_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
+         Fermi wave vector.
         pop_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
             Polar optical phonon wave vector.
 
         """
         if inverse_half_FD_method not in ['JD_approx', 'minimax_piecewise']:
             raise ValueError(f'Requested {inverse_half_FD_method} method is not implemeted yet. Contact developer.')
-        scaled_Ef = _FermiDiracInt._cal_eta_from_inv_FD(n_d, self.alloy_params_.get('e_effective_mass'), 
-                                                        T=T, method=inverse_half_FD_method)
-        E_f = 8.617333262145179e-05 * T * scaled_Ef # k_B J.K^-1 = k_B/e_charge eV.K^-1
-        print(f'Fermi level w.r.t conduction band using {inverse_half_FD_method}, E_f = {E_f: 0.6 eV}')
-        Fermi_wave_vector, Fermi_energy, Thomas_Fermi_screening_wv, \
-        tau_c_by_tau_q_dis, pop_wave_vector = self._3deg_properties(n_d, 
+        # Remove small values for the n_3d to avoid 0-division
+        n_d_ = np.nan if (np.isscalar(n_d) and n_d < self.eps_n_3d) else\
+            np.where(n_d < self.eps_n_3d, np.nan, n_d)   
+            
+        Scaled_Fermi_energy, Fermi_energy, Screening_wave_vector,\
+        tau_c_by_tau_q_dis, Fermi_wave_vector, pop_wave_vector = self._3deg_properties(n_d_, 
                                                            self.alloy_params_.get('static_dielectric_constant'),
                                                            self.alloy_params_.get('e_effective_mass'), 
                                                            self.alloy_params_.get('PO_phonon_energy'),
-                                                           f_dis=f_dis)
-        print(f'tau_c/tau_q ratio for dislocation = {tau_c_by_tau_q_dis}')
-        return(scaled_Ef, E_f, Fermi_wave_vector, Fermi_energy, 
-               Thomas_Fermi_screening_wv, tau_c_by_tau_q_dis, 
-               pop_wave_vector)
+                                                           T,inv_half_FD_method=inverse_half_FD_method
+                                                           )
+        return (Scaled_Fermi_energy, Fermi_energy, Screening_wave_vector, 
+                tau_c_by_tau_q_dis, Fermi_wave_vector, pop_wave_vector)
         
     def calculate_3D_mobility(self, n_3d=1, n_dis:float=1, f_dis:float=0.5, T:float=300,
                               alloy_disordered_effect:bool=False,
@@ -555,16 +542,13 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
                               total_mobility:bool=True,
                               calculate_total_mobility_only:bool=False, 
                               mobility_model_version:str='v1',
-                              inverse_half_FD_method:str='JD_approx',
-                              use_numerical_FD_integration:bool=False
+                              inverse_half_FD_method:str='minimax_piecewise',
+                              FermiDirac_integration_approach:str='minimax_piecewise',
+                              carrier_degeneracy_limit:str='general'
                               ):
         """
         This function calculates the sheet mobility from different scattering contributions.
         The mobility models are implemented based on the following references.
-        
-        Ref-1: Rajan et al., Appl. Phys. Lett. 88, 042103 (2006) => alloy disorder, polar optical phonon
-        Ref-2: DJ. and UKM., PRB 66, 241307(R) (2002) and DJ. et al., PRB 67, 153306 (2003)  => Dislocation
-        Ref-3: Debdeep Jena's thesis, Chapter-6 APPENDIX, Sec. Three-dimensional carriers => Acoustic phonon 
             
         The considered scattering mechanism are:
             Alloy disorder limited (AD)
@@ -610,18 +594,23 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             specified contributions.
         mobility_model_version : str, optional [options: 'v1']
             Which mobility model to use. The default is 'v1'.
-        inverse_half_FD_method : str, optional [available: 'JD_approx', 'minimax_piecewise']
+        inv_half_FD_method : str, optional [options: 'JD_approx', 'minimax_piecewise']
             The approximate method to calculate the scalled Fermi energy (E_f/k_BT) 
-            using inverse Fermi-Dirac integral of order-1/2. The default is JD_approx.
-            JD_approx : Joyce-Dixon approximation (APL 31, 354 (1977)).
-            minimax_piecewise : minimax approximation (Applied Mathematics and 
-                                                       Computation 259, 698 (2015))
-        use_numerical_FD_integration : bool, optional
-            Compute the integration numerically, using scipy.quad. If False, 
-            polylogaritm approach is used for FD_order > 1. For FD_order = 1 
+            using inverse Fermi-Dirac integral of order-1/2. The default is minimax_piecewise.
+            If JD_approx : Joyce-Dixon approximation (APL 31, 354 (1977)).
+            If minimax_piecewise : use Fukishima's minimax_piecewise approximations.
+        FermiDirac_integration_approach : str, optional [options: 'num', 'minimax_piecewise', 'polylog']
+            Compute the Fermi-Dirac integral. The default is minimax_piecewise.
+            If num: calculated numerically, using scipy.quad. 
+            If polylog: polylogaritm approach is used for FD_order > 1. For FD_order = 1 
             dilogarithm formulation is used.For FD_order=0, analytical solution 
             is used always.
-            The default is False. 
+            If minimax_piecewise: use Fukishima's minimax_piecewise approximation.
+        carrier_degeneracy_limit : str, optional [options: 'nondegenerate', 'degenerate', 'general']
+            Calculate mobilities at different carrier degenracy limit. The default
+            is 'general'.
+            NB: Degenerate and non-degenerate limits are only implemented for dislocation scattering.
+            Contact developer to request for other scattering mechanisms.
 
         Returns
         -------
@@ -629,6 +618,9 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             Total (or individual contributions) sheet mobility.
             
         """
+        if carrier_degeneracy_limit != 'general' and self.print_info is not None:
+            print('NB: Degenerate and non-degenerate limits are only implemented for dislocation scattering.')
+            print('Contact developer to request for other scattering mechanisms.')
         
         self.alloy_disordered_effect_=alloy_disordered_effect
         self.dislocation_effect_=dislocation_effect
@@ -639,7 +631,8 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         self.total_mobility_=total_mobility
         self.mobility_model_=mobility_model_version
         self.inverse_half_FD_method_ = inverse_half_FD_method 
-        self.use_numerical_FD_integration_ = use_numerical_FD_integration
+        self.FD_int_approach_ = FermiDirac_integration_approach
+        self.carrier_degenracy_limit_ = carrier_degeneracy_limit
         return self._calculate_3d_mobility(n_3d=n_3d, n_dis=n_dis, f_dis=f_dis, T=T)
 
 class Plottings(_plot_mobilities):  

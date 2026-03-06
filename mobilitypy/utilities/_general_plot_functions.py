@@ -68,6 +68,7 @@ class _GeneratePlots:
             return CountFig
 
         Path(self.save_figure_folder).mkdir(parents=True, exist_ok=True)
+        
         if fig is not None:
             fig.savefig(f'{self.save_figure_folder}/{fig_name}', 
                         bbox_inches='tight', **kwargs_savefig)
