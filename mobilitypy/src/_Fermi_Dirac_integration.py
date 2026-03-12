@@ -426,9 +426,9 @@ class _FermiDiracInt:
         eta_f : 1D float array (unit: uniless)
             Array containing carrier density data for compositions. Array size
             should be same as composition arrary. 
-        FD_order : str, optional ['zero', 'one', m_one_half, 'two', ...]
+        FD_order : str, optional [options: 'zero', 'one', 'm_one_half', 'one_half']
             FD integral oder. The default is 'zero'.
-        FD_int_approach : str, optional [available: 'num', 'minimax_piecewise', 'polylog']
+        FD_int_approach : str, optional [options: 'num', 'minimax_piecewise', 'polylog']
             Compute the Fermi-Dirac integral. The default is minimax_piecewise.
             If num: calculated numerically, using scipy.quad. 
             If polylog: polylogaritm approach is used for FD_order > 1. For FD_order = 1 

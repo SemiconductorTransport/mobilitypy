@@ -266,7 +266,7 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
             this contribution in total mobility calculation. The default is False.
             acoustic_phonon_effect combines deformation_potential and piezoelectric_effect.
             NOTE: One can use deformation_potential_effect=True, piezoelectric_effect=True, and
-            acoustic_phonon_effect=True, to return all three contrbutions separately in
+            acoustic_phonon_effect=True, to return all three contributions separately in
             the output. In the implementation it has been made sure that this setup
             does NOT double count the  deformation_potential and piezoelectric_effect;
             So, NO WORRIES!
@@ -486,7 +486,7 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         T : float, optional (unit: K)
             Temperature at which Fermi-Dirac integral calculations will be done. 
             The default is 300K.
-        inverse_half_FD_method : str, optional [available: 'JD_approx', 'minimax_piecewise']
+        inverse_half_FD_method : str, optional [options: 'JD_approx', 'minimax_piecewise']
             The approximate method to calculate the scaled Fermi energy (E_f/k_BT) 
             using inverse Fermi-Dirac integral of order-1/2. The default is JD_approx.
             JD_approx : Joyce-Dixon approximation (APL 31, 354 (1977)).
@@ -495,17 +495,17 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             
         Returns : tuple of lists/scalar 
         -------        
-        Scaled_Fermi_energy : float or 1d array of float (unit: unitless)
+        Scaled_Fermi_energy : list of float or 1d array of float list (unit: unitless)
             Fermi energy w.r.t conduction band w.r.t k_BT.
             general case: inverse Fermi-Dirac integral approach.
             degenerate case: assumes metallic ('degenerate') carriers.
             return : [general case, degenerate case]
-        Fermi_energy : float or 1d array of float (unit: eV)
+        Fermi_energy : list of float or 1d array of float list (unit: eV)
             Fermi energy w.r.t conduction band. 
             general case: inverse Fermi-Dirac integral approach.
             degenerate case: assumes metallic ('degenrate') carriers.
             return : [general case, degenerate case]
-        Screening_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
+        Screening_wave_vector : list of float or 1d array of float list (unit: 10^6 cm^-1)
             Screening wave vector. 
             return : [general,Thomas-Fermi,  Debye]
         tau_c_by_tau_q_dis : list of float or 1d array of float list (unit: unitless)
@@ -532,7 +532,39 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
                                                            )
         return (Scaled_Fermi_energy, Fermi_energy, Screening_wave_vector, 
                 tau_c_by_tau_q_dis, Fermi_wave_vector, pop_wave_vector)
-        
+    
+    @staticmethod
+    def calculate_FD_integrals(eta_f, FermiDirac_integration_order:str = 'zero', 
+                               FermiDirac_integration_approach:str='minimax_piecewise'):
+        """
+        This function calculated the Fermi-Dirac integrals of different orders.
+
+        Parameters
+        ----------
+        eta_f : float or 1d array of float (unit: unitless)
+            Fermi energy w.r.t conduction band w.r.t k_BT; eta_f = (E_F-E_C)/k_BT.
+        FermiDirac_integration_order : str, optional [options: 'zero', 'one', 'm_one_half', 'one_half']
+            Fermi-Dirac integral oder. The default is 'zero'. 
+        FermiDirac_integration_approach : str, optional [options: 'num', 'minimax_piecewise', 'polylog']
+            Compute the Fermi-Dirac integral. The default is minimax_piecewise.
+            If num: calculated numerically, using scipy.quad. 
+            If polylog: polylogaritm approach is used for FD_order > 1. For FD_order = 1 
+            dilogarithm formulation is used.For FD_order=0, analytical solution 
+            is used always.
+            If minimax_piecewise: use Fukishima's minimax_piecewise approximation..
+
+        Returns
+        -------
+        float or 1d array of float (unit: unitless)
+            Fermi-Dirac integral values.
+
+        """
+        return _FermiDiracInt._cal_Fermi_Dirac_integral(eta_f, 
+                                                        FD_order=
+                                                        FermiDirac_integration_order,
+                                                        FD_int_approach=
+                                                        FermiDirac_integration_approach) 
+      
     def calculate_3D_mobility(self, n_3d=1, n_dis:float=1, f_dis:float=0.5, T:float=300,
                               alloy_disordered_effect:bool=False,
                               dislocation_effect:bool=False,
@@ -547,14 +579,13 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
                               carrier_degeneracy_limit:str='general'
                               ):
         """
-        This function calculates the sheet mobility from different scattering contributions.
-        The mobility models are implemented based on the following references.
+        This function calculates the mobility from different scattering contributions.
             
         The considered scattering mechanism are:
             Alloy disorder limited (AD)
             Threading dislocation mediated (DIS)
             Piezoelectric effect (PE)
-            Acoustic deformation potential phonon (ADP)
+            Acoustic deformation potential phonon (DP)
             Polar optical phonon (POP)
 
         Parameters
@@ -595,7 +626,7 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         mobility_model_version : str, optional [options: 'v1']
             Which mobility model to use. The default is 'v1'.
         inv_half_FD_method : str, optional [options: 'JD_approx', 'minimax_piecewise']
-            The approximate method to calculate the scalled Fermi energy (E_f/k_BT) 
+            The approximate method to calculate the scaled Fermi energy (E_f/k_BT) 
             using inverse Fermi-Dirac integral of order-1/2. The default is minimax_piecewise.
             If JD_approx : Joyce-Dixon approximation (APL 31, 354 (1977)).
             If minimax_piecewise : use Fukishima's minimax_piecewise approximations.

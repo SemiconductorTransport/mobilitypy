@@ -47,7 +47,7 @@ class _Mobility3DCarrier:
             Alloy disorder limited (AD)
             Threading dislocation mediated (DIS)
             Piezoelectric phonon effect (PE)
-            Acoustic deformation potential phonon (ADP)
+            Acoustic deformation potential phonon (DP)
             Polar optical phonon (POP)
 
         Parameters
@@ -103,7 +103,7 @@ class _Mobility3DCarrier:
  
         if self.acoustic_phonon_effect_:
             if self.print_info is not None: print('\t-- Calculating acoustic phonon deformation potential effect mobility')
-            mobility['ADP'] = self._ac_dp_mu()
+            mobility['DP'] = self._ac_dp_mu()
             
         if self.piezoelectric_effect_:
             if self.print_info is not None: print('\t--- Calculating piezoelectric phonon effect mobility')
@@ -216,17 +216,17 @@ class _Mobility3DCarrier:
                                                        Computation 259, 698 (2015))          
        Returns : tuple of lists/scalar 
        -------        
-       Scaled_Fermi_energy : float or 1d array of float (unit: unitless)
+       Scaled_Fermi_energy : list of float or 1d array of float list (unit: unitless)
            Fermi energy w.r.t conduction band w.r.t k_BT.
            general case: inverse Fermi-Dirac integral approach.
            degenerate case: assumes metallic ('degenerate') carriers.
            return : [general case, degenerate case]
-       Fermi_energy : float or 1d array of float (unit: eV)
+       Fermi_energy : list of float or 1d array of float list (unit: eV)
            Fermi energy w.r.t conduction band. 
            general case: inverse Fermi-Dirac integral approach.
            degenerate case: assumes metallic ('degenerate') carriers.
            return : [general case, degenerate case]
-       Screening_wave_vector : float or 1d array of float (unit: 10^6 cm^-1)
+       Screening_wave_vector : list of float or 1d array of float list (unit: 10^6 cm^-1)
            Screening wave vector. 
            return : [general,Thomas-Fermi,  Debye]
        tau_c_by_tau_q_dis : list of float or 1d array of float list (unit: unitless)
