@@ -34,7 +34,7 @@ class DataBase(_DataBase):
         
     def update_database(self, for_material=None, with_new_database=None):
         """
-        To update the material parameters in the database. 
+        To update the material parameters in the database permanently. 
         Not implemented yet. Contact developer.
 
         Parameters
@@ -417,8 +417,9 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
     """
     
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', pseudomorphic_strain:bool=True, substrate=None,
-                 alloy_type='WZ', eps_n_3d=1e-14, print_log=None):
+                 system='ternary', pseudomorphic_strain:bool=False, substrate=None,
+                 alloy_type='WZ', use_bin_params:dict=None, eps_n_3d=1e-14, 
+                 print_log=None):
         """
         Initialization function of the class Mobility3DCarrier.
         
@@ -441,7 +442,7 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             The default is 'ternary'.
         pseudomorphic_strain : bool, optional
             Whether to consider pseudomorphic strain.
-            The default is True.
+            The default is False.
         substrate : string or float, optional (unit: Angstrom)
             The substrate name (if string, warning: the name should be in the database) 
             or the substrate in-plane lattice parameter (if float, Angstrom unit).
@@ -455,6 +456,10 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
                 for zincblende use 'ZB' or 'zb'.
                 for diamond use 'DM' or 'dm'.
             The default is 'WZ'. 
+        use_bin_params : dict, optional
+            To use different materials parameters from that given in the database.
+            Units should be same as in the database.
+            e.g. use_bin_params = {'AlN': {'mass_density': 3000}}
         eps_n_3d : float, optional (unit: 1e18 cm^-2)
             Carrier density below eps_n_3d will be considered as zero. 
             The default is 1e-14 1e18 cm^-2 == 1e4 cm^-2.
@@ -471,12 +476,20 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         _MobilityCarrier.__init__(self, compositions=compositions, binaries=binaries, 
                                   alloy=alloy, system=system, pseudomorphic_strain=pseudomorphic_strain, 
                                   substrate=substrate,alloy_type=alloy_type,
-                                  print_log=print_log, eps_n=eps_n_3d)
+                                  use_bin_params=use_bin_params, print_log=print_log, 
+                                  eps_n=eps_n_3d)
         _Mobility3DCarrier.__init__(self)
         
-    def calculate_3DEC_props(self, n_d, T:float=300, inverse_half_FD_method:str='minimax_piecewise'):
+    def calculate_elec_props_from_3DEC(self, n_d, T:float=300, inverse_half_FD_method:str='minimax_piecewise'):
         """
-        This function calculates some general properties of 3D carrier. 
+        This function calculates some general electronic properties, such as Fermi energy,
+        screening wave vector etc. from given 3D carrier density distribution. 
+        
+        N.B: Typically, in simulation given my Fermi level we calculate how much 
+        carrier density are generated. This function back tracks that: given a 
+        carrier density and material parameters, where the Fermi level supposed 
+        to be.
+        
 
         Parameters
         ----------
@@ -522,9 +535,9 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         # Remove small values for the n_3d to avoid 0-division
         n_d_ = np.nan if (np.isscalar(n_d) and n_d < self.eps_n_3d) else\
             np.where(n_d < self.eps_n_3d, np.nan, n_d)   
-            
+
         Scaled_Fermi_energy, Fermi_energy, Screening_wave_vector,\
-        tau_c_by_tau_q_dis, Fermi_wave_vector, pop_wave_vector = self._3deg_properties(n_d_, 
+        tau_c_by_tau_q_dis, Fermi_wave_vector, pop_wave_vector = self._cal_elec_props_from_3DEC(n_d_, 
                                                            self.alloy_params_.get('static_dielectric_constant'),
                                                            self.alloy_params_.get('e_effective_mass'), 
                                                            self.alloy_params_.get('PO_phonon_energy'),
@@ -645,8 +658,8 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
 
         Returns
         -------
-        pandas dataframe of compositions and mobilities (unit: cm^2 V^-1 S^-1).
-            Total (or individual contributions) sheet mobility.
+        Mobility: pandas dataframe of compositions and mobilities (unit: cm^2 V^-1 S^-1).
+            Total (or individual contributions) local carrier mobility.
             
         """
         if carrier_degeneracy_limit != 'general' and self.print_info is not None:
@@ -665,6 +678,33 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         self.FD_int_approach_ = FermiDirac_integration_approach
         self.carrier_degenracy_limit_ = carrier_degeneracy_limit
         return self._calculate_3d_mobility(n_3d=n_3d, n_dis=n_dis, f_dis=f_dis, T=T)
+    
+    def calculate_3DEC_props(self, n_d, mu_d, position):
+        """
+        This function calculates the effective/average properies of a 3D carrier distribution.
+
+        Parameters
+        ----------
+        n_d : 1d numpy array of float (unit: 1E18 cm^-3 )
+            The position dependent carrier density distribution.
+        mu_d : 1d numpy array of float (unit: cm^2.V^-1.s^-1 )
+            The position dependent carrier mobility distribution..
+        position : 1d numpy array of float (unit: nm)
+            The position array.
+        log_info : string, optional [options: 'high','medium','low', None]
+            Determines the level of log to be printed. The default is None.
+
+        Returns
+        -------
+        IntegratedEdensity: float (unit: 1E13 cm^-2)
+            Integrated carrier density.
+        average_mu : float (unit: cm^2.V^-1.s^-1)
+            Effective/average mobility.
+        SheetResistance : float (unit: Ohm/sq)
+            Effective sheet resistance.
+
+        """ 
+        return self._3dec_props(n_d, mu_d, position, log_info=self.print_info)
 
 class Plottings(_plot_mobilities):  
     """

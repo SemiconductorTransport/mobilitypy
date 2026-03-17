@@ -45,8 +45,8 @@ class _AlloyParams:
         self.bins_ = binaries
         self.alloy_ = alloy
         self.alloy_type_ = alloy_type
-
-    def _get_ternary_params(self):
+ 
+    def _get_ternary_params(self, use_bin_params:dict=None):
         """
         This function calculates the parameters for a ternary alloy from its
         binary component parameters using quadratic interpolation.
@@ -59,17 +59,32 @@ class _AlloyParams:
 
         """
         assert len(self.bins_) == 2, 'Provide two binary compounds'
-        bin_1_params_db = database.get(self.bins_[0])
-        bin_2_params_db = database.get(self.bins_[1])
-        alloy_params_db = database.get(self.alloy_)
+        bin_1_params_db = database.get(self.bins_[0]).copy()
+        bin_2_params_db = database.get(self.bins_[1]).copy()
+        alloy_params_db = database.get(self.alloy_).copy()
+        
+        #####_update_database_data_locally
+        if use_bin_params is not None:
+            for bin_name, parms_ in use_bin_params.items():
+                for pms_n in parms_:
+                    if bin_name == self.bins_[0]:
+                        bin_1_params_db[pms_n] = parms_[pms_n]
+                    elif bin_name == self.bins_[1]:
+                        bin_2_params_db[pms_n] = parms_[pms_n]
+                    elif bin_name == self.alloy_:
+                        alloy_params_db[pms_n] = parms_[pms_n]
+                    else:
+                        raise ValueError('Material name should be one of binary or alloy name')
+        ######
         self.alloy_params_ = {}
         for key, bowing in alloy_params_db.items():
             self.alloy_params_[key] = self.comps_ * bin_1_params_db.get(key) +\
             (1-self.comps_) * bin_2_params_db.get(key) - bowing*self.comps_*(1-self.comps_)  
+        self._cal_square_electromechanical_coupling_const()
         self._get_strain_realted_properties()
         #print(self.alloy_params_)
             
-    def _get_alloy_params(self, system='ternary'):
+    def _get_alloy_params(self, system='ternary', use_bin_params:dict=None):
         """
         This function calculates the parameters for a ternary alloy from its
         binary component parameters using quadratic interpolation.
@@ -79,6 +94,10 @@ class _AlloyParams:
         system : string (case sensitive), optional
             Type of the alloy. E.g. 'ternary'. 
             The default is 'ternary'.
+        use_bin_params : dict, optional
+            To use different materials parameters from that given in the database.
+            Units should be same as in the database.
+            e.g. use_bin_params = {'AlN': {'mass_density': 3000}}
 
         Returns
         -------
@@ -86,11 +105,11 @@ class _AlloyParams:
 
         """
         if self.comps_ is None:
-            self.comps_ = np.linspace(0.01, 0.99, 101)
+            self.comps_ = np.linspace(0., 1.0, 101)
         elif isinstance(self.comps_, float) or isinstance(self.comps_, int):
             self.comps_ = np.array([self.comps_])
         if system == 'ternary':
-            self._get_ternary_params()
+            self._get_ternary_params(use_bin_params=use_bin_params)
             
     @staticmethod        
     def _get_substrate_properties(substrate_name):
@@ -110,7 +129,7 @@ class _AlloyParams:
             name does not exists in the database return None.
 
         """
-        return database.get(substrate_name)
+        return database.get(substrate_name).copy()
     
     def _get_strain_realted_properties(self):
         """
@@ -146,3 +165,19 @@ class _AlloyParams:
                 self.alloy_params_.get('C_12')/(self.alloy_params_.get('C_11')+self.alloy_params_.get('C_12'))
         else:
             raise ValueError(f'{self.alloy_type_} is not implemented yet. Contact developer.')
+                 
+    def _cal_square_electromechanical_coupling_const(self):
+        e_33, e_31, e_15 = self.alloy_params_['e_33'], self.alloy_params_['e_31'], self.alloy_params_['e_15']
+        u_LA, u_TA = self.alloy_params_['LA_phonon_velocity'], self.alloy_params_['TA_phonon_velocity']
+        eps_s, rho = self.alloy_params_['static_dielectric_constant'], self.alloy_params_['mass_density']
+        eps_00 = 8.8541878188e-12 #  C.V^-1.m^-1
+        
+        e_31_p_2_e_15 = e_31 + 2.0*e_15
+        e_33_e_31_e_15 = e_33 - e_31 - e_15
+        
+        e_l_2_av = (15.0*e_33*e_33 + 12.0*e_33*e_31_p_2_e_15 + 8.0*e_31_p_2_e_15*e_31_p_2_e_15) #/105
+        e_T_2_av = (48.0*e_15*e_15 + 16.0*e_33_e_31_e_15*e_15 + 6.0*e_33_e_31_e_15*e_33_e_31_e_15) #/105
+        
+        self.alloy_params_['electromechanical_coupling_const'] = \
+            ((e_l_2_av/(u_LA*u_LA*eps_00)) + (e_T_2_av/(u_TA*u_TA*eps_00)))/(eps_s*rho*105.0)
+        return 

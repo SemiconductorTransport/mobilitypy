@@ -8,6 +8,8 @@ Created on Thu Dec  4 16:15:33 2025
 import numpy as np
 import pandas as pd
 from ._Fermi_Dirac_integration import _FermiDiracInt
+import scipy.integrate as integrate
+
 ## ============================================================================
 class _Mobility3DCarrier:
     '''
@@ -153,10 +155,14 @@ class _Mobility3DCarrier:
     
     ## Piezoelectric phonon scattering limited mobility
     def _mu_pz(self):
-        #16*k_B*eps_0/(3*pi*h_bar*e*1e18*1e2) = 0.12282713258060055 # cm^2V^-1s^-1K^-1
-        FD_1 = _FermiDiracInt._cal_Fermi_Dirac_integral(self.eta_f_, FD_order = 'one',
-                                                        FD_int_approach=self.FD_int_approach_)
-        return self.temp_*self.eps_s_*FD_1*0.12282713258060055/(self.n_3d_*self.K_sqr)
+        if self.carrier_degenracy_limit_ == 'nondegenerate':
+            # 16*np.sqrt(2*pi_)/3*h_bar**2*eps_0/(e_charge*e_mass**(3/2)*k_B**(1/2))*1e4 = 25.43338614569858
+            return 25.43338614569858*self.eps_s_/(np.sqrt(self.m_star_**3*self.temp_)*self.K_sqr) #cm^2V^-1s^-1
+        else:
+            # 16*k_B*eps_0/(3*pi_*h_bar*e_charge*1e18*1e2) = 0.12282713258060055 # cm^2V^-1s^-1K^-1
+            FD_1 = _FermiDiracInt._cal_Fermi_Dirac_integral(self.eta_f_, FD_order = 'one',
+                                                            FD_int_approach=self.FD_int_approach_)
+            return self.temp_*self.eps_s_*FD_1*0.12282713258060055/(self.n_3d_*self.K_sqr) #cm^2V^-1s^-1
     
     ## Dislocation limited mobility
     def _dis_mu(self): 
@@ -192,7 +198,7 @@ class _Mobility3DCarrier:
                         /(self.n_dislocation_*self.f_dislocation_**2*F_1h) # cm^2V^-1s^-1
         
     @staticmethod
-    def _3deg_properties(n_3d, eps_s, m_star, pop_en, T, 
+    def _cal_elec_props_from_3DEC(n_3d, eps_s, m_star, pop_en, T, 
                          inv_half_FD_method:str='minimax_piecewise'):
         """
     
@@ -272,3 +278,45 @@ class _Mobility3DCarrier:
                 [screening_wavevector_Gen, 1/_Thomas_Fermi_screening_len, Debye_wave_vector], 
                 [tau_c_by_tau_q_dis_D, tau_c_by_tau_q_dis_ND], 
                 Fermi_wave_vector, _pop_wave_vector)
+    
+    @staticmethod
+    def _3dec_props(n_d, mu_d, position, log_info=None):
+        """
+        This function calculates the effective/average properies of a 3D carrier distribution.
+
+        Parameters
+        ----------
+        n_d : 1d numpy array of float (unit: 1E18 cm^-3 )
+            The position dependent carrier density distribution.
+        mu_d : 1d numpy array of float (unit: cm^2.V^-1.s^-1 )
+            The position dependent carrier mobility distribution..
+        position : 1d numpy array of float (unit: nm)
+            The position array.
+        log_info : string, optional [options: 'high','medium','low', None]
+            Determines the level of log to be printed. The default is None.
+
+        Returns
+        -------
+        IntegratedEdensity: float (unit: 1E13 cm^-2)
+            Integrated carrier density.
+        average_mu : float (unit: cm^2.V^-1.s^-1)
+            Effective/average mobility.
+        SheetResistance : float (unit: Ohm/sq)
+            Effective sheet resistance.
+
+        """
+        density_mobility_ratio = n_d/mu_d
+        density_mobility_ratio[np.isnan(density_mobility_ratio)] = 0
+        mobility_first_moment_nominator =integrate.trapezoid(density_mobility_ratio, x=position) 
+        
+        IntegratedEdensity = integrate.trapezoid(n_d, x=position) # 1e11 cm^-2
+        average_mu = IntegratedEdensity/mobility_first_moment_nominator # == 1.0/(mobility_first_moment_nominator/IntegratedEdensity)
+        
+        # 1/(1e11*e_charge) = 62415090.744607635
+        SheetResistance = 62415090.744607635/(average_mu*IntegratedEdensity) # Ohm/sq
+       
+        if log_info is not None:
+           print(f'\to ave_es = {IntegratedEdensity*1e-2:0.2f} x 1E13 cm^-2')
+           print(f'\to ave_mu = {average_mu:.2f} cm^2.V^-1.s^-1')
+           print(f'\to Rsh = {SheetResistance:.2f} Ohm/sq')
+        return IntegratedEdensity*1e-2, average_mu, SheetResistance

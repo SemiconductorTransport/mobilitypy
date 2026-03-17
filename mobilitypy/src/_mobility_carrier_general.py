@@ -18,7 +18,8 @@ class _MobilityCarrier(_AlloyParams):
     
     def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
                  system='ternary', pseudomorphic_strain=False, substrate=None, 
-                 alloy_type='WZ', print_log=None, eps_n=1e-10):
+                 alloy_type='WZ', use_bin_params:dict=None, 
+                 print_log=None, eps_n=1e-10):
         """
         Initiation function of the class _MobilityCarrier.
         
@@ -56,6 +57,10 @@ class _MobilityCarrier(_AlloyParams):
                 for zincblende use 'ZB' or 'zb'.
                 for diamond use 'DM' or 'dm'.
             The default is 'WZ'. 
+        use_bin_params : dict, optional
+            To use different materials parameters from that given in the database.
+            Units should be same as in the database.
+            e.g. use_bin_params = {'AlN': {'mass_density': 3000}}
         print_log : string, optional => ['high','medium','low', None]
             Determines the level of log to be printed. The default is None.
         eps_n : float, optional (unit: nm^-2 for 2DEG or 1e18 cm^-2 for 3DG)
@@ -78,7 +83,7 @@ class _MobilityCarrier(_AlloyParams):
 
         _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, 
                               alloy=alloy, alloy_type=alloy_type)
-        self._get_alloy_params(system=system)
+        self._get_alloy_params(system=system, use_bin_params=use_bin_params)
         if pseudomorphic_strain:
             if isinstance(substrate, str):
                 substrate_params_dic = self._get_substrate_properties(substrate)
@@ -113,7 +118,7 @@ class _MobilityCarrier(_AlloyParams):
         self.K_sqr = K_square
         self.E_d = E_D
         self.temp_ = T if T > 1e-8 else 1e-5 # Make sure zero divison does not happen when T=0 is choosen
-        self.omega = sqrt_3_by_2 * self.a_lp**2 * self.c_lp # sqrt(3)/2 * a^2 c 
+        self.omega = sqrt_3_by_2 * self.a_lp*self.a_lp * self.c_lp # sqrt(3)/2 * a^2 c 
         # # m0 / e = 5.685630103565723*10^-12 V.m^-2.s^2
         self.m_star_by_e_ = 5.685630103565723 * self.m_star_ # 10^-12 V.m^-2.s^2
             

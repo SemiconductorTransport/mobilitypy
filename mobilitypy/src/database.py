@@ -8,6 +8,8 @@ Ref-1': Mondal et. al., APL Electronic Devices 1, 026117 (2025)
 Ref-2: Pant et al, APL 117, 242105 (2020)
 Ref-3: http://www.ioffe.ru/SVA/NSM/Semicond/index.html
 Ref-4: Vurgaftman et. al., J. Appl. Phys. 94, 3675–3696 (2003)
+Ref-5: Shimada, Jpn. J. Appl. Phys., Vol. 45, No. 12 (2006)
+Ref-6: Dreyer et al. Phys. Rev. X 6, 021038 (2016)
 
 Units:
 mass_density => kg/m3 # Ref-3
@@ -26,6 +28,7 @@ CB_deformation_potential => eV
 PO_phonon_energy => eV
 electromechanical_coupling_const => unitless
 C_ij => GPa # Ref-4
+e_ij => Piezoelectric constants # C/m^2 # e_15 from Ref-5; e33, e31 from Ref-6
 '''
 database = {
             # ========================== Binaries =============================
@@ -41,12 +44,13 @@ database = {
              'alloy_scattering_potential': 1.0,
              'static_dielectric_constant': 8.90,
              'high_frequency_dielectric_constant': 5.35,
-             'LA_phonon_velocity': 6560,
-             'TA_phonon_velocity': 2680,
+             'LA_phonon_velocity': 8000,
+             'TA_phonon_velocity': 4130,
              'CB_deformation_potential': 8.3,
              'PO_phonon_energy': 91.2e-3,
-             'electromechanical_coupling_const': 0.045,
-             'C_11': 390, 'C_12': 145, 'C_13': 106, 'C_33': 398, 'C_44': 105 
+             #'electromechanical_coupling_const': 0.045,
+             'C_11': 390, 'C_12': 145, 'C_13': 106, 'C_33': 398, 'C_44': 105,
+             'e_31': -1.863, 'e_33': 1.020, 'e_15': -0.38 
              },
            'AlN': 
             {'mass_density': 3230,
@@ -59,12 +63,13 @@ database = {
              'alloy_scattering_potential': 1.8,
              'static_dielectric_constant': 8.50,
              'high_frequency_dielectric_constant': 4.60,
-             'LA_phonon_velocity': 9060,
-             'TA_phonon_velocity': 3700,
+             'LA_phonon_velocity': 10127,
+             'TA_phonon_velocity': 6333,
              'CB_deformation_potential': 9.5,
              'PO_phonon_energy': 99.0e-3,
-             'electromechanical_coupling_const': 0.106,
-             'C_11': 396, 'C_12': 137, 'C_13': 108, 'C_33': 373, 'C_44': 116
+             #'electromechanical_coupling_const': 0.106,
+             'C_11': 396, 'C_12': 137, 'C_13': 108, 'C_33': 373, 'C_44': 116,
+             'e_31': -2.027, 'e_33': 1.569, 'e_15': -0.41
              },
             # ========================== Ternaries ============================
             # AlGaN
@@ -83,7 +88,8 @@ database = {
              'TA_phonon_velocity': 0,
              'CB_deformation_potential': 0,
              'PO_phonon_energy': 0,
-             'electromechanical_coupling_const': 0,
-             'C_11': 0, 'C_12': 0, 'C_13': 0, 'C_33': 0, 'C_44': 0
+             #'electromechanical_coupling_const': 0,
+             'C_11': 0, 'C_12': 0, 'C_13': 0, 'C_33': 0, 'C_44': 0,
+             'e_31': 0, 'e_33': 0, 'e_15': 0
              }
             }

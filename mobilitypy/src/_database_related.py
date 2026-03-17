@@ -24,7 +24,8 @@ class _DataBase:
                       'CB_deformation_potential': 'eV',
                       'PO_phonon_energy': 'eV',
                       'electromechanical_coupling_const': 'unitless',
-                      'C_ij': 'GPa'
+                      'C_ij': 'GPa',
+                      'e_ij': 'C/m2'
                       }
     parameter_name_mapping = {'mass_density': 'Mass density',
                               'lattice_a0': 'a0 lattice parameter',
@@ -41,7 +42,8 @@ class _DataBase:
                               'CB_deformation_potential': 'Conduction band deformation potential',
                               'PO_phonon_energy': 'Polar optical phonon energy',
                               'electromechanical_coupling_const': 'Electromechanical coupling coefficient',
-                              'C_ij': 'Elastic constants'}
+                              'C_ij': 'Elastic constants',
+                              'e_ij': 'Piezoelectic constant'}
     def __init__(self):
         pass
     
@@ -70,6 +72,8 @@ Ref-1': Mondal et. al., APL Electronic Devices 1, 026117 (2025)
 Ref-2: Pant et al, APL 117, 242105 (2020)
 Ref-3: http://www.ioffe.ru/SVA/NSM/Semicond/index.html
 Ref-4: Vurgaftman et. al., J. Appl. Phys. 94, 3675–3696 (2003)
+Ref-5: Shimada, Jpn. J. Appl. Phys., Vol. 45, No. 12 (2006)
+Ref-6: Dreyer et al. Phys. Rev. X 6, 021038 (2016)
         '''
         database_header_info = """
 The database contains the following information for each material. 
@@ -83,7 +87,7 @@ to print parameter values for the specific material""")
             for key, value in cls.database_units.items():
                 print(f'{cls.parameter_name_mapping.get(key)} => {key}: {value}')
         else:
-            params_db = database.get(for_material)
+            params_db = database.get(for_material).copy()
             if params_db:
                 database_header_info = f"""
 NOTE: For ternary or higher-order materials, the parameter values represent 
