@@ -164,7 +164,7 @@ class _Mobility2DCarrier:
                     mobility[ii]['DIS'] = self._mobility_calculator(inv_sc)
                     if return_sc_rates: 
                         mobility[ii]['DIS_sc'] = inv_sc
-                    if self.mobility_model_ == 'Mondal2026v1':
+                    if self.mobility_model_ == 'v2':
                         inv_sc = self._inv_tau_dis_strain()
                         total_inv_sc += inv_sc
                         mobility[ii]['DIS_Strain'] = self._mobility_calculator(inv_sc)
@@ -219,14 +219,14 @@ class _Mobility2DCarrier:
         This function sets the parameters for mobility calculations.
         """
         self._set_params_general(m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
-                                 n_dis, f_dis, mass_density, v_LA, E_pop, E_D, K_square, T)
+                                 n_dis, f_dis, mass_density, v_LA, E_pop, E_D, K_square, 
+                                 poisson_ratio, T)
         #==========================================
         self.comp_ = alloy_composition 
         self.n_2d_ = n_2d
         #==========================================
         self.corr_len_ = corr_len
         self.rms_roughness_ = rms_roughness
-        self.poisson_ratio = poisson_ratio
         #==========================================
         self._get_derived_params()
 
@@ -399,7 +399,7 @@ class _Mobility2DCarrier:
         if (self.comp_ < 1e-8) or (self.n_2d_ < self.eps_n_2d) or ((1-self.comp_)<1e-8): return 0
         #*****************************************
         #(3*e_mass*e_charge**2)/(16*h_bar**3)*1e6*1e-8**3*1e-4 = 0.37383724882773683 1e12 s^-1
-        return 0.37383724882773683 * self.m_star_ * self.omega * self.sc_potential_**2 \
+        return 0.37383724882773683 * self.m_star_ * self.omega_0_ad * self.sc_potential_**2 \
                 * self.comp_ * (1.0 - self.comp_) * self.b_ # 1e12 s^-1
 
     # ----------- deformation potential -------------------

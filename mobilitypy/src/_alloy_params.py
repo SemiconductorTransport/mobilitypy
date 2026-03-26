@@ -165,6 +165,25 @@ class _AlloyParams:
                 self.alloy_params_.get('C_12')/(self.alloy_params_.get('C_11')+self.alloy_params_.get('C_12'))
         else:
             raise ValueError(f'{self.alloy_type_} is not implemented yet. Contact developer.')
+            
+    def _cal_omega_0_ad(self, a_lp, b_lp, c_lp):
+        """
+        NOTE: As described in the DJ's book Omega_0 in alloy disorder scattering
+        mobility is not 'literally' the unit cell volume, 
+        rather it is the effective volume that atom A (or B) occupies
+        in the crystal or the average volume per atom.  
+
+        """
+        if self.alloy_type_.lower() == 'wz':
+            # the average volume per atom in the wurtzite structure is given by
+            # sqrt(3)/8 * a^2 c. 4 atoms per unit cell. Unit cell vol = sqrt(3)/2 * a^2 c
+            return 0.21650635094610965 * a_lp * b_lp * c_lp # sqrt(3)/8 * a^2 c
+        elif self.alloy_type_.lower() == 'zb':
+            # Here the primitive cell volume is a^3/4. But we have 2 atoms per
+            # unit cell. 
+            return 0.125 * a_lp * b_lp * c_lp # a^3/8
+        else:
+            raise ValueError(f'{self.alloy_type_} is not implemented yet. Contact developer.')
                  
     def _cal_square_electromechanical_coupling_const(self):
         e_33, e_31, e_15 = self.alloy_params_['e_33'], self.alloy_params_['e_31'], self.alloy_params_['e_15']

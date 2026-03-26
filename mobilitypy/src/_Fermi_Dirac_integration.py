@@ -228,7 +228,7 @@ class _FermiDiracInt:
             y=nu*np.sqrt(nu)*0.666666666666666667e0*(1.e0+w \
             *(8109.79390744477921e0+s*(342.069867454704106e0+s*1.07141702293504595e0)) \
             /(6569.98472532829094e0+s*(280.706465851683809e0+s)))
-        return 1.1283791670955126e0 * y # 1/(Gamma(3/2))*y
+        return 1.1283791670955126 * y # 1/(Gamma(3/2))*y
     
     @classmethod
     def _Fukushima_FD_one(cls, nu: float) -> float:
@@ -337,7 +337,7 @@ class _FermiDiracInt:
         return integrate.quad(_FD_func, 0, np.inf, args=(eta,))[0]
     
     @classmethod
-    def _FD_dis_I_quad(cls, eta:float, B:float) -> float:
+    def _FD_dis_chg_I_quad(cls, eta:float, B:float) -> float:
         """
         Use a numerically stable form: 1/(1+exp(x-eta)) = expit(eta-x)
         Numerial integration using scipy.integrate.quad over [0, inf)
@@ -347,14 +347,38 @@ class _FermiDiracInt:
         return integrate.quad(_FD_func, 0, np.inf, args=(eta,B))[0]
     
     @classmethod
-    def _FD_dis_Integration_gen(cls, eta_f, B):
+    def _FD_dis_chg_Integration(cls, eta_f, B):
         if np.isscalar(eta_f):
-            return cls._FD_dis_I_quad(eta_f, B)
+            return cls._FD_dis_chg_I_quad(eta_f, B)
         else:
-            assert len(eta_f) == len(B), 'Length of eta and B does not match.'
             # quad is not vectorized. So vectorize the integrand function first.
-            vec_FD_dis_I_quad = np.vectorize(cls._FD_dis_I_quad)
-            return vec_FD_dis_I_quad(eta_f, B)
+            vec_FD_dis_chg_I_quad = np.vectorize(cls._FD_dis_chg_I_quad)
+            return vec_FD_dis_chg_I_quad(eta_f, B)
+    
+    @classmethod
+    def _FD_dis_str_Integral(cls, x, eta, B):
+        """
+        Use a numerically stable form: 1/(1+exp(x-eta)) = expit(eta-x)
+        """
+        y = np.sqrt(B/(B+x))
+        return (5.0-5.0*y-(x/(B+x))*y)/(1-y)**2*x**(3/2)*special.expit(eta-x)
+        
+    @classmethod
+    def _FD_dis_str_I_quad(cls, eta:float, B:float) -> float:
+        if np.isnan(eta) or np.isnan(B): return np.nan
+        """
+        Numerial integration using scipy.integrate.quad over [0, inf)
+        """
+        return integrate.quad(cls._FD_dis_str_Integral, 0, np.inf, args=(eta,B))[0]
+    
+    @classmethod
+    def _FD_dis_str_Integration(cls, eta_f, B):
+        if np.isscalar(eta_f):
+            return cls._FD_dis_str_I_quad(eta_f, B)
+        else:
+            # quad is not vectorized. So vectorize the integrand function first.
+            vec_FD_dis_str_I_quad = np.vectorize(cls._FD_dis_str_I_quad)
+            return vec_FD_dis_str_I_quad(eta_f, B)
         
     @classmethod
     def _FD_integral_order_1(cls, eta_f, FD_integration_approach:str='minimax_piecewise'):

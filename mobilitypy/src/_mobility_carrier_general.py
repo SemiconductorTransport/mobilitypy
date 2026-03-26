@@ -8,7 +8,6 @@ Created on Thu Dec  4 15:41:33 2025
 
 import numpy as np
 from ._alloy_params import _AlloyParams
-from ._constants import sqrt_3_by_2, e_mass, e_charge
 
 ## ============================================================================
 class _MobilityCarrier(_AlloyParams):
@@ -100,7 +99,8 @@ class _MobilityCarrier(_AlloyParams):
             self.alloy_params_['lattice_c0']= lattice_c * (1.0 + epsilon_zz)
             
     def _set_params_general(self, m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
-                            n_dis, f_dis, mass_density, v_LA, E_pop, E_D, K_square, T):
+                            n_dis, f_dis, mass_density, v_LA, E_pop, E_D, K_square, 
+                            poisson_ratio, T):
         """
         This function sets the parameters for mobility calculations.
         """
@@ -117,8 +117,9 @@ class _MobilityCarrier(_AlloyParams):
         self.E_pop = E_pop
         self.K_sqr = K_square
         self.E_d = E_D
+        self.poisson_ratio = poisson_ratio
         self.temp_ = T if T > 1e-8 else 1e-5 # Make sure zero divison does not happen when T=0 is choosen
-        self.omega = sqrt_3_by_2 * self.a_lp*self.a_lp * self.c_lp # sqrt(3)/2 * a^2 c 
+        self.omega_0_ad = self._cal_omega_0_ad(self.a_lp, self.a_lp, self.c_lp ) 
         # # m0 / e = 5.685630103565723*10^-12 V.m^-2.s^2
         self.m_star_by_e_ = 5.685630103565723 * self.m_star_ # 10^-12 V.m^-2.s^2
             

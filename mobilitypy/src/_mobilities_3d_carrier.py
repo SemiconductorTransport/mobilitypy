@@ -40,10 +40,6 @@ class _Mobility3DCarrier:
         """
         This function calculates the sheet mobility from different scattering contributions.
         The mobility models are implemented based on the following references.
-        
-        Ref-1: Rajan et al., Appl. Phys. Lett. 88, 042103 (2006) => alloy disorder, polar optical phonon
-        Ref-2: DJ. and UKM., PRB 66, 241307(R) (2002) and DJ. et al., PRB 67, 153306 (2003)  => Dislocation
-        Ref-3: Debdeep Jena's thesis, Chapter-6 APPENDIX, Sec. Three-dimensional carriers => Acoustic phonon 
             
         The considered scattering mechanism are:
             Alloy disorder limited (AD)
@@ -84,8 +80,8 @@ class _Mobility3DCarrier:
                                  self.alloy_params_.get('PO_phonon_energy'), 
                                  self.alloy_params_.get('CB_deformation_potential'),
                                  self.alloy_params_.get('electromechanical_coupling_const'),
-                                 T
-                                 )
+                                 self.alloy_params_.get('isotropic_Poisson_ratio'),
+                                 T)
         # Remove small values for the n_3d to avoid 0-division
         self.n_3d_ = np.nan if (np.isscalar(n_3d) and n_3d < self.eps_n_3d) else\
             np.where(n_3d < self.eps_n_3d, np.nan, n_3d)        
@@ -97,32 +93,46 @@ class _Mobility3DCarrier:
         mobility = {}
         if self.alloy_disordered_effect_:
             if self.print_info is not None: print('\t-- Calculating alloy-disordered mobility')
-            mobility['AD'] = self._alloy_disorder_mu()
+            mobility['mu_AD'] = self._alloy_disorder_mu()
                 
         if self.polar_optical_phonon_effect_:
             if self.print_info is not None: print('\t-- Calculating polar optical phonon effect mobility')
-            mobility['POP'] = self._pop_mu()
+            mobility['mu_POP'] = self._pop_mu()
  
         if self.acoustic_phonon_effect_:
             if self.print_info is not None: print('\t-- Calculating acoustic phonon deformation potential effect mobility')
-            mobility['DP'] = self._ac_dp_mu()
+            mobility['mu_DP'] = self._ac_dp_mu()
             
         if self.piezoelectric_effect_:
             if self.print_info is not None: print('\t--- Calculating piezoelectric phonon effect mobility')
-            mobility['PE'] = self._mu_pz()
+            mobility['mu_PE'] = self._mu_pz()
                             
         if self.dislocation_effect_:
             if self.print_info is not None: print('\t-- Calculating dislocation effect mobility')
-            mobility['DIS'] = self._dis_mu()
+            self._dis_facts()
+            XX = ['mu_DIS_TD_CHG']
+            mobility['mu_DIS_TD_CHG'] = self._td_chg_dis_mu()
+            if self.carrier_degenracy_limit_ == 'general': 
+                XX.append('mu_DIS_TD_STR')
+                mobility['mu_DIS_TD_STR'] = self._td_str_dis_mu()
         
         MuDataframe = pd.DataFrame.from_dict(mobility)
         
         if self.total_mobility_:
             if self.print_info is not None: print('\t-- Calculating total mobility')
-            MuDataframe['TOT'] = 1/((1/MuDataframe).sum(axis=1, skipna=True))
-        
+            #print(list(MuDataframe.keys()))
+            MuDataframe['mu_TOT'] = 1/((1/MuDataframe).sum(axis=1, skipna=True))
+            
         if self.print_info is not None: print(f'{"="*72}')
-        return MuDataframe['TOT'] if self.only_total_mobility else MuDataframe
+        
+        if self.only_total_mobility:
+            return MuDataframe['mu_TOT']
+        else:
+            if self.dislocation_effect_ and (self.carrier_degenracy_limit_ == 'general'):
+                # Postprocessing: total DIS
+                MuDataframe['mu_DIS'] = 1/((1/MuDataframe[XX]).sum(axis=1, skipna=True))
+                
+            return MuDataframe
     
     def _ln_1p_exp_xi(self):
         """
@@ -132,11 +142,11 @@ class _Mobility3DCarrier:
     
     ## Alloy disordered limited mobility
     def _alloy_disorder_mu(self, eps_den = 1e-8):        
-        demoninator_ = self.m_star_*self.sc_potential_*self.sc_potential_*self.omega \
+        demoninator_ = self.m_star_*self.sc_potential_*self.sc_potential_*self.omega_0_ad \
                        *self.n_3d_*self.comps_*(1.0-self.comps_)          
         # Remove small values for both the n_3d and comps_ or (1-comps_)
         demoninator_ = np.where(demoninator_ < eps_den, np.nan, demoninator_)
-        #fact_ad_3d = 21.16990563011839 # (2*e*h_bar*k_B)/(3*pi*m0*e^2) * 1e10 => cm^-2.K^-1.V-1.s-1
+        #(2*e_charge*h_bar*k_B)/(3*pi_*e_mass*e_charge**2) * 1e10 = 21.16990563011839
         return 21.16990563011839 * self.temp_ * self._ln_1p_exp_xi() / demoninator_ # cm^2.V^-1.s^-1
     
     ## Polar optical phonon limited mobility
@@ -149,7 +159,7 @@ class _Mobility3DCarrier:
     
     ## Deformation potential acoustic phonon limited mobility
     def _ac_dp_mu(self):
-        #2*h_bar*e*1e-2/(3*pi*m0*e*e*1e18) = 1.53333002306295e-06 # cm^2V^-1s^-1
+        # 2*e_charge*h_bar/(3*pi_*e_mass*e_charge**2*1e20) = 1.53333002306295e-06 # cm^2V^-1s^-1
         numerator = self.mass_density_ * self.v_LA * self.v_LA * self._ln_1p_exp_xi() * 1.53333002306295e-06
         return numerator / (self.n_3d_*self.m_star_*self.E_d*self.E_d)
     
@@ -165,7 +175,18 @@ class _Mobility3DCarrier:
             return self.temp_*self.eps_s_*FD_1*0.12282713258060055/(self.n_3d_*self.K_sqr) #cm^2V^-1s^-1
     
     ## Dislocation limited mobility
-    def _dis_mu(self): 
+    def _dis_facts(self):
+        # Only minimax_piecewise method is implemented for Fermi Diract 1/2, -1/2 integral.
+        F_m_1h = _FermiDiracInt._cal_Fermi_Dirac_integral(self.eta_f_, FD_order = 'm_one_half',
+                                                          FD_int_approach='minimax_piecewise')
+        F_1h = _FermiDiracInt._cal_Fermi_Dirac_integral(self.eta_f_, FD_order = 'one_half',
+                                                          FD_int_approach='minimax_piecewise')    
+        self.F1hRatio = F_m_1h/F_1h
+        # h_bar**2*e_charge**2/(8*e_mass*eps_0*k_B**2)*1e24 = 23210.19722793661
+        self.dis_B_fact = 23210.19722793661*self.n_3d_*self.F1hRatio/(self.m_star_*self.eps_s_*self.temp_**2)
+        return
+    
+    def _td_chg_dis_mu(self): 
         if self.carrier_degenracy_limit_ == 'degenerate':
             #4k_F^2 lambda^2 = 4*3**(1/3)*h_bar**2*pi_**(8/3)*eps_0/e_charge**2/e_mass*1e8 = 0.051430964880517044
             fact_12 = (1+0.051430964880517044*self.n_3d_**(1/3)*self.eps_s_/self.m_star_)**(3/2)
@@ -173,29 +194,24 @@ class _Mobility3DCarrier:
             return 149.27327984905628 * self.c_lp * self.n_3d_**(2/3) * fact_12 \
                     / self.n_dislocation_ / self.f_dislocation_**2  
         elif self.carrier_degenracy_limit_ == 'nondegenerate':
-            #512*np.sqrt(2)/np.sqrt(pi_)*(eps_0**(3/2)*k_B/np.sqrt(e_mass)/e_charge**2*1e-16) = 0.6065283634225609
-            return 0.6065283634225609 * self.c_lp*self.c_lp*self.temp_\
+            # 128*np.sqrt(2)/np.sqrt(pi_)*(eps_0**(3/2)*k_B/np.sqrt(e_mass)/e_charge**2*1e-16)=0.15163209085564022
+            # 16*np.sqrt(2)*(eps_0**(3/2)*k_B/np.sqrt(e_mass)/e_charge**2*1e-16) = 0.03359511041974182
+            return 0.15163209085564022 * self.c_lp*self.c_lp*self.temp_\
                     *np.sqrt(self.eps_s_*self.eps_s_*self.eps_s_*self.n_3d_/self.m_star_)\
                         / self.n_dislocation_ / self.f_dislocation_**2
-        else:
-            # Only minimax_piecewise method is implemented for Fermi Diract 1/2, -1/2 integral.
-            F_m_1h = _FermiDiracInt._cal_Fermi_Dirac_integral(self.eta_f_, FD_order = 'm_one_half',
-                                                              FD_int_approach='minimax_piecewise')
-            F_1h = _FermiDiracInt._cal_Fermi_Dirac_integral(self.eta_f_, FD_order = 'one_half',
-                                                              FD_int_approach='minimax_piecewise')
-            
-            # e_charge**2/(8*eps_0*h_bar)*np.sqrt(e_mass/(2*pi_**3*k_B)) = 112.09053941170968
-            B_fact = 112.09053941170968 * np.sqrt(self.m_star_/self.temp_)/self.eps_s_*F_m_1h
-            I_eta = _FermiDiracInt._FD_dis_Integration_gen(self.eta_f_, B_fact)
-            
-            #np.sqrt(e_charge**2*e_mass**(3/2)*k_B**(1/2)/(eps_0*(2*pi_*pi_*pi_)**
-            # (1/2)*h_bar**3))*1e-2 = 10.070231429501227 # 1e6 cm^-1
-            q_s = 10.070231429501227 * np.sqrt(
-                np.sqrt(self.m_star_**3*self.temp_)*F_m_1h/self.eps_s_) # 1e6 cm^-1
-            #32*np.sqrt(2/pi_)*eps_0*eps_0*k_B**(3/2)/(e_mass**(1/2)*e_charge**3)*1e-20 = 0.0002615994007871283
-            return 0.0002615994007871283 * (self.eps_s_*self.eps_s_*self.c_lp*self.c_lp)\
-                    *np.sqrt(self.temp_*self.temp_*self.temp_/self.m_star_)*q_s*I_eta\
-                        /(self.n_dislocation_*self.f_dislocation_**2*F_1h) # cm^2V^-1s^-1
+        else:            
+            I_eta = _FermiDiracInt._FD_dis_chg_Integration(self.eta_f_, self.dis_B_fact)
+            #32*eps_0**(3/2)*k_B**(5/2)*e_mass/(pi_**2*e_charge**2*h_bar**3) * 1e-40 = 0.00018307171939577983
+            return 0.00018307171939577983*(self.c_lp*self.c_lp*self.m_star_)\
+                    *np.sqrt(self.eps_s_**3*self.temp_**5*self.F1hRatio/self.n_3d_)\
+                        /(self.n_dislocation_*self.f_dislocation_**2) *I_eta 
+                        
+    def _td_str_dis_mu(self): 
+        I_eta = _FermiDiracInt._FD_dis_str_Integration(self.eta_f_, self.dis_B_fact)     
+        poisson_part = ((1-self.poisson_ratio)/(1-2*self.poisson_ratio))**2
+        #16.0/(3*np.sqrt(2.0)*pi_*pi_)*np.sqrt(e_mass*k_B**5)/(e_charge*h_bar*h_bar)*1e-12= 144.9686096147091
+        return 144.9686096147091*np.sqrt(self.temp_**5*self.m_star_)*poisson_part\
+                /(self.n_3d_*self.n_dislocation_*self.a_lp**2*self.E_d**2)*I_eta 
         
     @staticmethod
     def _cal_elec_props_from_3DEC(n_3d, eps_s, m_star, pop_en, T, 
@@ -252,6 +268,8 @@ class _Mobility3DCarrier:
         # Only minimax_piecewise method is implemented for Fermi Diract -1/2 integral.
         F_m_1h = _FermiDiracInt._cal_Fermi_Dirac_integral(scaled_Ef, FD_order = 'm_one_half',
                                                           FD_int_approach='minimax_piecewise')
+        #np.sqrt(e_charge*e_charge/eps_0/k_B)*1e4 = 144.9086756309392
+        #screening_wavevector_Gen = 144.9086756309392 * np.sqrt(self.n_3d_*F1hRatio/(self.eps_s_*self.temp_)) # 1e6 cm^-1
         #np.sqrt(e_charge**2*e_mass**(3/2)*k_B**(1/2)/(eps_0*(2*pi_*pi_*pi_)**
         # (1/2)*h_bar**3))*1e-2 = 10.070231429501227 # 1e6 cm^-1
         screening_wavevector_Gen = 10.070231429501227 * np.sqrt(np.sqrt(m_star**3*T)*F_m_1h/eps_s) # 1e6 cm^-1

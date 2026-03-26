@@ -253,8 +253,11 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
             Whether to calculate interface roughness effect mediated mobility. Or, whether to include 
             this contribution in total mobility calculation. The default is False.
         dislocation_effect : bool, optional
-            Whether to calculate interface roughness effect mediated mobility. Or, whether to include 
+            Whether to calculate dislocation_effect mediated mobility. Or, whether to include 
             this contribution in total mobility calculation. The default is False.
+            NOTE: It includes scattering from threading edge dislocation charge line.
+            For v2 model verion onwords scattering from strain field from threading
+            edge dislocations is also included.
         deformation_potential_effect : bool, optional
             Whether to calculate deformation potential effect mediated mobility. Or, whether to include 
             this contribution in total mobility calculation. The default is False.
@@ -618,8 +621,11 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             Whether to calculate alloy disordered mediated mobility. Or, whether to include 
             this contribution in total mobility calculation. The default is False.
         dislocation_effect : bool, optional
-            Whether to calculate interface roughness effect mediated mobility. Or, whether to include 
+            Whether to calculate dislocation_effect mediated mobility. Or, whether to include
             this contribution in total mobility calculation. The default is False.
+            It includes scattering from threading edge dislocation charge line and
+            scattering from strain field from threading edge dislocations.
+            mu_DIS = (1/mu_DIS_TD_CHG + 1/mu_DIS_TD_STR)^-1
         piezoelectric_effect : bool, optional
             Whether to calculate piezoelectric effect mediated mobility. Or, whether to include 
             this contribution in total mobility calculation. The default is False.
@@ -653,7 +659,7 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         carrier_degeneracy_limit : str, optional [options: 'nondegenerate', 'degenerate', 'general']
             Calculate mobilities at different carrier degenracy limit. The default
             is 'general'.
-            NB: Degenerate and non-degenerate limits are only implemented for dislocation scattering.
+            NB: Degenerate and non-degenerate limits are only implemented for charge dislocation scattering.
             Contact developer to request for other scattering mechanisms.
 
         Returns

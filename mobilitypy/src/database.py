@@ -10,6 +10,8 @@ Ref-3: http://www.ioffe.ru/SVA/NSM/Semicond/index.html
 Ref-4: Vurgaftman et. al., J. Appl. Phys. 94, 3675–3696 (2003)
 Ref-5: Shimada, Jpn. J. Appl. Phys., Vol. 45, No. 12 (2006)
 Ref-6: Dreyer et al. Phys. Rev. X 6, 021038 (2016)
+Ref-7: Debdeep Jena. "Quantum physics of semiconductor materials and devices"", 
+Chapter - scattering, mobility, and velocity saturation, page 555, USA, 2002. 
 
 Units:
 mass_density => kg/m3 # Ref-3
@@ -22,9 +24,9 @@ e_effective_mass => m0 # Ref-2
 alloy_scattering_potential => eV # Ref-2
 static_dielectric_constant => epsilon_0
 high_frequency_dielectric_constant => epsilon_0
-LA_phonon_velocity => m/s
-TA_phonon_velocity => m/s
-CB_deformation_potential => eV
+LA_phonon_velocity => m/s # Ref-7
+TA_phonon_velocity => m/s # Ref-7
+CB_deformation_potential => eV # Ref-7
 PO_phonon_energy => eV
 electromechanical_coupling_const => unitless
 C_ij => GPa # Ref-4
@@ -44,8 +46,8 @@ database = {
              'alloy_scattering_potential': 1.0,
              'static_dielectric_constant': 8.90,
              'high_frequency_dielectric_constant': 5.35,
-             'LA_phonon_velocity': 8000,
-             'TA_phonon_velocity': 4130,
+             'LA_phonon_velocity': 7960,
+             'TA_phonon_velocity': 5020,
              'CB_deformation_potential': 8.3,
              'PO_phonon_energy': 91.2e-3,
              #'electromechanical_coupling_const': 0.045,
@@ -63,8 +65,8 @@ database = {
              'alloy_scattering_potential': 1.8,
              'static_dielectric_constant': 8.50,
              'high_frequency_dielectric_constant': 4.60,
-             'LA_phonon_velocity': 10127,
-             'TA_phonon_velocity': 6333,
+             'LA_phonon_velocity': 11270,
+             'TA_phonon_velocity': 6220,
              'CB_deformation_potential': 9.5,
              'PO_phonon_energy': 99.0e-3,
              #'electromechanical_coupling_const': 0.106,

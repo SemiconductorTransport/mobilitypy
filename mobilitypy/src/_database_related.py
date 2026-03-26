@@ -74,6 +74,8 @@ Ref-3: http://www.ioffe.ru/SVA/NSM/Semicond/index.html
 Ref-4: Vurgaftman et. al., J. Appl. Phys. 94, 3675–3696 (2003)
 Ref-5: Shimada, Jpn. J. Appl. Phys., Vol. 45, No. 12 (2006)
 Ref-6: Dreyer et al. Phys. Rev. X 6, 021038 (2016)
+Ref-7: Debdeep Jena. "Quantum physics of semiconductor materials and devices"", 
+Chapter - scattering, mobility, and velocity saturation, page 555, USA, 2002. 
         '''
         database_header_info = """
 The database contains the following information for each material. 
