@@ -302,7 +302,7 @@ class _FermiDiracInt:
             # n_by_Nc = n_d / Nc_3d * 1e3 # 1E18 cm^-3 / 1e15 cm^-3 = 1e3
             #         = (1/4.829366089004772 * 1e3)* n_d / ((m_star*T)**(3/2)) # cm^-3
             #         = 207.06651381777488 * n_d / ((m_star*T)**(3/2)) # cm^-3
-            n_by_Nc = 207.06651381777488 * n_d / ((m_star*T)**(3/2))
+            n_by_Nc = 207.06651381777488 * n_d / (np.sqrt(m_star*T))**3
             #----------------------------------------------------------------------
             # Joyce-Dixon approximation (APL 31, 354 (1977)) 
             # Upto cube term is considered
@@ -315,7 +315,7 @@ class _FermiDiracInt:
             # n_by_N = n_d / N_3d * 1e3 # 1E18 cm^-3 / 1e15 cm^-3 = 1e3
             #         = (1/5.449356085110519 * 1e3)* n_d / ((m_star*T)**(3/2)) # cm^-3
             #         = 183.5079199049476 * n_d / ((m_star*T)**(3/2)) # cm^-3
-            n_by_N = 183.5079199049476 * n_d / ((m_star*T)**(3/2))
+            n_by_N = 183.5079199049476 * n_d / (np.sqrt(m_star*T))**3
             if np.isscalar(n_by_N):
                 return cls._Fukushima_iFD_half(n_by_N)
             else:
@@ -326,34 +326,13 @@ class _FermiDiracInt:
             raise ValueError(f'Requested {method} method is not implemeted yet. Contact developer.')
     
     @classmethod
-    def _FD1_quad(cls, eta:float) -> float:
-        """
-        Integrand for F1(eta) = int_0_inf x/(1+exp(x-eta)) dx
-        Use a numerically stable form: 1/(1+exp(x-eta)) = expit(eta-x)
-        Numerial integration using scipy.integrate.quad over [0, inf)
-        """
-        if np.isnan(eta): return np.nan
-        _FD_func = lambda x, eta: x * special.expit(eta-x)
-        return integrate.quad(_FD_func, 0, np.inf, args=(eta,))[0]
-    
-    @classmethod
-    def _FD_dis_chg_I_quad(cls, eta:float, B:float) -> float:
+    def _FD_dis_chg_Integration(cls, eta, B):
         """
         Use a numerically stable form: 1/(1+exp(x-eta)) = expit(eta-x)
         Numerial integration using scipy.integrate.quad over [0, inf)
         """
-        if np.isnan(eta) or np.isnan(B): return np.nan
-        _FD_func = lambda x, eta, B: (B+2*x)*np.sqrt(B*x+x*x)*special.expit(eta-x)
-        return integrate.quad(_FD_func, 0, np.inf, args=(eta,B))[0]
-    
-    @classmethod
-    def _FD_dis_chg_Integration(cls, eta_f, B):
-        if np.isscalar(eta_f):
-            return cls._FD_dis_chg_I_quad(eta_f, B)
-        else:
-            # quad is not vectorized. So vectorize the integrand function first.
-            vec_FD_dis_chg_I_quad = np.vectorize(cls._FD_dis_chg_I_quad)
-            return vec_FD_dis_chg_I_quad(eta_f, B)
+        _FD_func = lambda x, eta, B: (B+2*x)*np.sqrt(x+(x*x/B))*special.expit(eta-x)
+        return integrate.quad_vec(_FD_func, 0, np.inf, args=(eta,B))[0]
     
     @classmethod
     def _FD_dis_str_Integral(cls, x, eta, B):
@@ -361,24 +340,11 @@ class _FermiDiracInt:
         Use a numerically stable form: 1/(1+exp(x-eta)) = expit(eta-x)
         """
         y = np.sqrt(B/(B+x))
-        return (5.0-5.0*y-(x/(B+x))*y)/(1-y)**2*x**(3/2)*special.expit(eta-x)
-        
-    @classmethod
-    def _FD_dis_str_I_quad(cls, eta:float, B:float) -> float:
-        if np.isnan(eta) or np.isnan(B): return np.nan
-        """
-        Numerial integration using scipy.integrate.quad over [0, inf)
-        """
-        return integrate.quad(cls._FD_dis_str_Integral, 0, np.inf, args=(eta,B))[0]
+        return (5.0-5.0*y-(x/(B+x))*y)*x*np.sqrt(x)*special.expit(eta-x)/B/(1-y)**2
     
     @classmethod
     def _FD_dis_str_Integration(cls, eta_f, B):
-        if np.isscalar(eta_f):
-            return cls._FD_dis_str_I_quad(eta_f, B)
-        else:
-            # quad is not vectorized. So vectorize the integrand function first.
-            vec_FD_dis_str_I_quad = np.vectorize(cls._FD_dis_str_I_quad)
-            return vec_FD_dis_str_I_quad(eta_f, B)
+        return integrate.quad_vec(cls._FD_dis_str_Integral, 0, np.inf, args=(eta_f,B))[0]
         
     @classmethod
     def _FD_integral_order_1(cls, eta_f, FD_integration_approach:str='minimax_piecewise'):
@@ -388,12 +354,13 @@ class _FermiDiracInt:
         The default is 'minimax_piecewise' 
         """
         if FD_integration_approach == 'num':
-            if np.isscalar(eta_f):
-                return cls._FD1_quad(eta_f)
-            else:
-                # quad is not vectorized. So vectorize the integrand function first.
-                vec_FD1_quad = np.vectorize(cls._FD1_quad)
-                return vec_FD1_quad(eta_f)
+            """
+            Integrand for F1(eta) = int_0_inf x/(1+exp(x-eta)) dx
+            Use a numerically stable form: 1/(1+exp(x-eta)) = expit(eta-x)
+            Numerial integration using scipy.integrate.quad over [0, inf)
+            """
+            _FD_func = lambda x, eta: x * special.expit(eta_f-x)
+            return integrate.quad_vec(_FD_func, 0, np.inf, args=(eta_f,))[0]
         elif FD_integration_approach == 'polylog':
             return (-1) * special.spence(1.0+np.exp(eta_f))
         else:
@@ -402,6 +369,21 @@ class _FermiDiracInt:
             else:
                 vec_FD1_Fukushima = np.vectorize(cls._Fukushima_FD_one)
                 return vec_FD1_Fukushima(eta_f)
+            
+    @classmethod
+    def _FD_integral_order_2(cls, eta_f, FD_integration_approach:str='minimax_piecewise'):
+        """
+        Compute the integration numerically, using scipy.quad or dilogarithm approach
+        using spence function, or Fukushima's 'minimax_piecewise'. 
+        The default is 'minimax_piecewise' 
+        """
+        #if FD_integration_approach == 'num':
+        """
+        Use a numerically stable form: 1/(1+exp(x-eta)) = expit(eta-x)
+        Numerial integration using scipy.integrate.quad over [0, inf)
+        """
+        _FD_func = lambda x, eta: x*x * special.expit(eta_f-x)
+        return 0.5 * integrate.quad_vec(_FD_func, 0, np.inf, args=(eta_f,))[0]
             
     @classmethod
     def _FD_integral_order_m1h(cls, eta_f, FD_integration_approach:str='minimax_piecewise'):
@@ -467,14 +449,17 @@ class _FermiDiracInt:
 
         """       
         if FD_order == 'zero':
-            return np.log(1+np.exp(eta_f))
+            # np.log1p(x) = log(1 + x)
+            return np.log1p(np.exp(eta_f))
             # np.logaddexp(a,b) = np.log(exp(a)+exp(b)) => better stable in log operation
             #return np.logaddexp(0,eta_f) # Produce warning when nan encounter 
-        elif FD_order == 'one':
-            return cls._FD_integral_order_1(eta_f, FD_integration_approach=FD_int_approach)
         elif FD_order == 'm_one_half':
             return cls._FD_integral_order_m1h(eta_f, FD_integration_approach=FD_int_approach)
         elif FD_order == 'one_half':
             return cls._FD_integral_order_1h(eta_f, FD_integration_approach=FD_int_approach)
+        elif FD_order == 'one':
+            return cls._FD_integral_order_1(eta_f, FD_integration_approach=FD_int_approach)
+        elif FD_order == 'two':
+            return cls._FD_integral_order_2(eta_f, FD_integration_approach=FD_int_approach)
         else:
             raise ValueError(f'{FD_order} FD integral is not implemented yet. Contact developer.')

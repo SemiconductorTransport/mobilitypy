@@ -99,8 +99,8 @@ class _MobilityCarrier(_AlloyParams):
             self.alloy_params_['lattice_c0']= lattice_c * (1.0 + epsilon_zz)
             
     def _set_params_general(self, m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
-                            n_dis, f_dis, mass_density, v_LA, E_pop, E_D, K_square, 
-                            poisson_ratio, T):
+                            n_dis, f_dis, n_ion_impurity, mass_density, v_LA, E_pop, 
+                            E_D, K_square, poisson_ratio, T):
         """
         This function sets the parameters for mobility calculations.
         """
@@ -112,6 +112,7 @@ class _MobilityCarrier(_AlloyParams):
         self.sc_potential_ = sc_potential
         self.n_dislocation_ = n_dis
         self.f_dislocation_ = f_dis
+        self.n_ion_imp =n_ion_impurity
         self.mass_density_ = mass_density
         self.v_LA = v_LA
         self.E_pop = E_pop

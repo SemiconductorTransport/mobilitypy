@@ -105,7 +105,8 @@ class _Mobility2DCarrier:
         deformation_pot = self.alloy_params_.get('CB_deformation_potential')
         electromech_coupling_sqr = self.alloy_params_.get('electromechanical_coupling_const')
         POP_energy = self.alloy_params_.get('PO_phonon_energy')  
-        isotropic_Poisson_ratio = self.alloy_params_.get('isotropic_Poisson_ratio')         
+        isotropic_Poisson_ratio = self.alloy_params_.get('isotropic_Poisson_ratio')   
+        n_ion_impurity = 0 # not implemented yet. 
 
         if isinstance(n_2d, int) or isinstance(n_2d, float):
             n_2d = [n_2d] * len(self.comps_)
@@ -117,7 +118,7 @@ class _Mobility2DCarrier:
             self._set_params(e_effective_mass[ii], static_dielectric_constant[ii], 
                              high_frequency_dielectric_constant[ii],
                              lattice_c[ii], lattice_a[ii], sc_potential[ii], self.comps_[ii],
-                             n_2d[ii], rms_roughness, corr_len, n_dis, f_dis, 
+                             n_2d[ii], rms_roughness, corr_len, n_dis, f_dis, n_ion_impurity, 
                              T, electromech_coupling_sqr[ii], deformation_pot[ii], 
                              mass_densitty[ii], LA_velocity[ii], POP_energy[ii],
                              isotropic_Poisson_ratio[ii])
@@ -214,13 +215,14 @@ class _Mobility2DCarrier:
         
     def _set_params(self, m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
                     alloy_composition, n_2d, rms_roughness, corr_len, n_dis, f_dis, 
-                    T, K_square, E_D, mass_density, v_LA, E_pop, poisson_ratio):
+                    n_ion_impurity, T, K_square, E_D, mass_density, 
+                    v_LA, E_pop, poisson_ratio):
         """
         This function sets the parameters for mobility calculations.
         """
         self._set_params_general(m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
-                                 n_dis, f_dis, mass_density, v_LA, E_pop, E_D, K_square, 
-                                 poisson_ratio, T)
+                                 n_dis, f_dis, n_ion_impurity, mass_density, v_LA, E_pop, 
+                                 E_D, K_square, poisson_ratio, T)
         #==========================================
         self.comp_ = alloy_composition 
         self.n_2d_ = n_2d

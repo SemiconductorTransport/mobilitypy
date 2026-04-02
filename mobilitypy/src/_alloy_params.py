@@ -176,7 +176,7 @@ class _AlloyParams:
         """
         if self.alloy_type_.lower() == 'wz':
             # the average volume per atom in the wurtzite structure is given by
-            # sqrt(3)/8 * a^2 c. 4 atoms per unit cell. Unit cell vol = sqrt(3)/2 * a^2 c
+            # np.sqrt(3)/8 * a^2 c. 4 atoms per unit cell. Unit cell vol = sqrt(3)/2 * a^2 c
             return 0.21650635094610965 * a_lp * b_lp * c_lp # sqrt(3)/8 * a^2 c
         elif self.alloy_type_.lower() == 'zb':
             # Here the primitive cell volume is a^3/4. But we have 2 atoms per
