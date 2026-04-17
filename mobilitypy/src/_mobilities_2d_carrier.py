@@ -94,7 +94,7 @@ class _Mobility2DCarrier:
             then scattering rates (10^12 s^-1) and m_star_by_e (10^-12 V.m^-2.s^2) are also returned.
 
         """
-        e_effective_mass = self.alloy_params_.get('e_effective_mass') 
+        carrier_effective_mass = self.alloy_params_.get('carrier_effective_mass') 
         static_dielectric_constant = self.alloy_params_.get('static_dielectric_constant') 
         high_frequency_dielectric_constant = self.alloy_params_.get('high_frequency_dielectric_constant')
         lattice_a = self.alloy_params_.get('lattice_a0') 
@@ -115,7 +115,7 @@ class _Mobility2DCarrier:
         for ii in range(len(self.comps_)):
             #print(n_2d[ii])
             mobility[ii] = {'comp': f'{self.comps_[ii]:.3f}'}
-            self._set_params(e_effective_mass[ii], static_dielectric_constant[ii], 
+            self._set_params(carrier_effective_mass[ii], static_dielectric_constant[ii], 
                              high_frequency_dielectric_constant[ii],
                              lattice_c[ii], lattice_a[ii], sc_potential[ii], self.comps_[ii],
                              n_2d[ii], rms_roughness, corr_len, n_dis, f_dis, n_ion_impurity, 

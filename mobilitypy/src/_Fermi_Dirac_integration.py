@@ -330,9 +330,9 @@ class _FermiDiracInt:
         """
         Use a numerically stable form: 1/(1+exp(x-eta)) = expit(eta-x)
         Numerial integration using scipy.integrate.quad over [0, inf)
-        """
-        _FD_func = lambda x, eta, B: (B+2*x)*np.sqrt(x+(x*x/B))*special.expit(eta-x)
-        return integrate.quad_vec(_FD_func, 0, np.inf, args=(eta,B))[0]
+        """   
+        _FD_func = lambda x, eta, B: (B+2.0*x)*np.sqrt(x+(x*x/B))*special.expit(eta-x)
+        return integrate.quad_vec(_FD_func, 0, np.inf, args=(eta,B), workers=1)[0]
     
     @classmethod
     def _FD_dis_str_Integral(cls, x, eta, B):
@@ -344,7 +344,7 @@ class _FermiDiracInt:
     
     @classmethod
     def _FD_dis_str_Integration(cls, eta_f, B):
-        return integrate.quad_vec(cls._FD_dis_str_Integral, 0, np.inf, args=(eta_f,B))[0]
+        return integrate.quad_vec(cls._FD_dis_str_Integral, 0, np.inf, args=(eta_f,B), workers=1)[0]
         
     @classmethod
     def _FD_integral_order_1(cls, eta_f, FD_integration_approach:str='minimax_piecewise'):
@@ -359,8 +359,8 @@ class _FermiDiracInt:
             Use a numerically stable form: 1/(1+exp(x-eta)) = expit(eta-x)
             Numerial integration using scipy.integrate.quad over [0, inf)
             """
-            _FD_func = lambda x, eta: x * special.expit(eta_f-x)
-            return integrate.quad_vec(_FD_func, 0, np.inf, args=(eta_f,))[0]
+            _FD_func = lambda x, eta: x * special.expit(eta-x)
+            return integrate.quad_vec(_FD_func, 0, np.inf, workers=1, args=(eta_f,))[0]
         elif FD_integration_approach == 'polylog':
             return (-1) * special.spence(1.0+np.exp(eta_f))
         else:
@@ -382,8 +382,8 @@ class _FermiDiracInt:
         Use a numerically stable form: 1/(1+exp(x-eta)) = expit(eta-x)
         Numerial integration using scipy.integrate.quad over [0, inf)
         """
-        _FD_func = lambda x, eta: x*x * special.expit(eta_f-x)
-        return 0.5 * integrate.quad_vec(_FD_func, 0, np.inf, args=(eta_f,))[0]
+        _FD_func = lambda x, eta: x*x * special.expit(eta-x)
+        return 0.5 * integrate.quad_vec(_FD_func, 0, np.inf, workers=1, args=(eta_f,))[0]
             
     @classmethod
     def _FD_integral_order_m1h(cls, eta_f, FD_integration_approach:str='minimax_piecewise'):

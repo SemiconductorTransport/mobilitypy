@@ -67,20 +67,19 @@ class AlloyParams(_AlloyParams):
     def __init__(self):
         pass
             
-    def get_alloy_params(self, system='ternary', compositions=None, binaries=['AlN', 'GaN'], 
-                         alloy='AlGaN', alloy_type:str='wz'):
+    def get_alloy_params(self, compositions=None, binaries=['AlN', 'GaN'], 
+                         alloy_crystal_structure:str='wz', 
+                         use_mat_params:dict=None, 
+                         alloy_type:str=None):
         """
-        This function calculates the parameters for a ternary alloy from its
-        binary component parameters using quadratic interpolation.
+        This function calculates material parameters for alloy from its
+        binary component parameters using interpolation.
         E.g. for any parameter, P:
             P_SixGe1-x = x*P_Si + (1-x)*P_Ge - x*(1-x)*P_bowing 
-            P_bowing is the quadratic bowing parameter for the parameter P.
+            P_bowing is the bowing parameter for the parameter P.
 
         Parameters
         ----------
-        system : string (case sensitive), optional
-            Type of the alloy. E.g. 'ternary'. 
-            The default is 'ternary'.
         compositions : 1D array of float, optional
             The alloy mole fractions. E.g. x values in Si_xGe_1-x. The default is None.
             If None, a composition array is generated using `np.linspace(start=0.01, end=0.99, num=101)`.
@@ -89,11 +88,7 @@ class AlloyParams(_AlloyParams):
             match the names in database. All implemented materials name list 
             can be found in the README. 
             The default is ['AlN', 'GaN'].
-        alloy : string (case sensitive), optional
-            The alloy name. The name should match the name in database. All   
-            implemented materials name list can be found in the README. Case sensitive.
-            The default is 'AlGaN'.
-        alloy_type :  str, optional 
+        alloy_crystal_structure :  str, optional [options: 'WZ', 'ZB', 'DM']
             The crystal type of the materials. This will be considered when calculating
             parameters like Poisson ratio etc.
             Use following abbreviation name:
@@ -101,6 +96,17 @@ class AlloyParams(_AlloyParams):
                 for zincblende use 'ZB' or 'zb'.
                 for diamond use 'DM' or 'dm'.
             The default is 'wz'. 
+        use_mat_params : dict, optional
+            To use different materials parameters from that given in the database.
+            Simply join the binary names to construct the alloy name. e.g.,
+            for binaries=['AlN', 'GaN'] the alloy name is 'AlNGaN' or 'GaNAlN'.
+            Material parameters units should be same as in the database.
+            e.g. use_mat_params = {'AlN': {'mass_density': 3000}}
+            If None, nothing will be done. The default is None.
+        alloy_type : string (case sensitive), optional [options: 'CatAni']
+            The alloy type name. Case sensitive. Only needed if alloy is of AxB1-xCxD1-y
+            kind. Will be ignored for alloy of type AxB1-x, AxByC1-x-y, AxByCzD1-x-y-z etc.
+            The default is None.
 
         Returns
         -------
@@ -109,8 +115,9 @@ class AlloyParams(_AlloyParams):
 
         """
         _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, 
-                              alloy=alloy, alloy_type=alloy_type)
-        return self._get_alloy_params(system=system)
+                              alloy_crystal_structure=alloy_crystal_structure,
+                              alloy_type=alloy_type)
+        return self._get_alloy_params(use_mat_params=use_mat_params)
 
 class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
     """
@@ -131,9 +138,10 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
     Impact on high-power device performance potential. APL Electronic Devices 1, 026117 (2025)
     https://doi.org/10.1063/5.0277051
     """
-    def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', pseudomorphic_strain:bool=False, substrate=None,
-                 alloy_type='WZ', eps_n_2d=1e-8, print_log=None):
+    def __init__(self, compositions=None, binaries=['AlN', 'GaN'],  
+                 pseudomorphic_strain:bool=False, substrate:str|float=None, 
+                 alloy_crystal_structure:str='wz', use_mat_params:dict=None, 
+                 alloy_type:str=None, eps_n_2d=1e-8, print_log=None):
         """
         Initiation function of the class Mobility2DCarrier.
         
@@ -147,13 +155,6 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
             match the names in database. All implemented materials name list 
             can be found in the README. 
             The default is ['AlN', 'GaN'].
-        alloy : string (case sensitive), optional
-            The alloy name. The name should match the name in database. All   
-            implemented materials name list can be found in the README. Case sensitive.
-            The default is 'AlGaN'.
-        system : string (case sensitive), optional
-            Type of the alloy. E.g. 'ternary'. 
-            The default is 'ternary'.
         pseudomorphic_strain : bool, optional
             Whether to consider pseudomorphic strain.
             The default is False.
@@ -162,14 +163,25 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
             or the substrate in-plane lattice parameter (if float, Angstrom unit).
             The default is None. Error will be raised if substrate=None and 
             pseudomorphic_strain=True.
-        alloy_type :  str, optional 
-            The crystal type of alloy. This will be considered when calculating
+        alloy_crystal_structure :  str, optional [options: 'WZ', 'ZB', 'DM']
+            The crystal type of the materials. This will be considered when calculating
             parameters like Poisson ratio etc.
             Use following abbreviation name:
                 for wurtzite use 'WZ' or 'wz'.
                 for zincblende use 'ZB' or 'zb'.
                 for diamond use 'DM' or 'dm'.
-            The default is 'WZ'. 
+            The default is 'wz'. 
+        use_mat_params : dict, optional
+            To use different materials parameters from that given in the database.
+            Simply join the binary names to construct the alloy name. e.g.,
+            for binaries=['AlN', 'GaN'] the alloy name is 'AlNGaN' or 'GaNAlN'.
+            Material parameters units should be same as in the database.
+            e.g. use_mat_params = {'AlN': {'mass_density': 3000}}
+            If None, nothing will be done. The default is None.
+        alloy_type : string (case sensitive), optional [options: 'CatAni']
+            The alloy type name. Case sensitive. Only needed if alloy is of AxB1-xCxD1-y
+            kind. Will be ignored for alloy of type AxB1-x, AxByC1-x-y, AxByCzD1-x-y-z etc.
+            The default is None.
         eps_n_2d : float, optional (unit: 10^12 cm^-2)
             Carrier density below eps_n_2d will be considered as zero. 
             The default is 1e-8 == 1e4 cm^-2.
@@ -182,8 +194,9 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
 
         """
         _MobilityCarrier.__init__(self, compositions=compositions, binaries=binaries, 
-                                  alloy=alloy, system=system, pseudomorphic_strain=pseudomorphic_strain, 
-                                  substrate=substrate,alloy_type=alloy_type,
+                                  pseudomorphic_strain=pseudomorphic_strain, 
+                                  substrate=substrate, alloy_crystal_structure=alloy_crystal_structure,
+                                  use_mat_params=use_mat_params, alloy_type=alloy_type, 
                                   print_log=print_log, eps_n=eps_n_2d)
         _Mobility2DCarrier.__init__(self)
         
@@ -419,10 +432,10 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
     
     """
     
-    def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', pseudomorphic_strain:bool=False, substrate=None,
-                 alloy_type='WZ', use_bin_params:dict=None, eps_n_3d=1e-14, 
-                 print_log=None):
+    def __init__(self, compositions=None, binaries=['AlN', 'GaN'], 
+                 pseudomorphic_strain:bool=False, substrate:str|float=None,
+                 alloy_crystal_structure:str='wz', use_mat_params:dict=None, 
+                 alloy_type:str=None, eps_n_3d=1e-14, print_log=None):
         """
         Initialization function of the class Mobility3DCarrier.
         
@@ -436,13 +449,6 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             match the names in database. All implemented materials name list 
             can be found in the README. 
             The default is ['AlN', 'GaN'].
-        alloy : string (case sensitive), optional
-            The alloy name. The name should match the name in database. All   
-            implemented materials name list can be found in the README. Case sensitive.
-            The default is 'AlGaN'.
-        system : string (case sensitive), optional
-            Type of the alloy. E.g. 'ternary'. 
-            The default is 'ternary'.
         pseudomorphic_strain : bool, optional
             Whether to consider pseudomorphic strain.
             The default is False.
@@ -451,18 +457,25 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             or the substrate in-plane lattice parameter (if float, Angstrom unit).
             The default is None. Error will be raised if substrate=None and 
             pseudomorphic_strain=True.
-        alloy_type :  str, optional (case insensitive)
-            The crystal type of alloy. This will be considered when calculating
+        alloy_crystal_structure :  str, optional [options: 'WZ', 'ZB', 'DM']
+            The crystal type of the materials. This will be considered when calculating
             parameters like Poisson ratio etc.
             Use following abbreviation name:
                 for wurtzite use 'WZ' or 'wz'.
                 for zincblende use 'ZB' or 'zb'.
                 for diamond use 'DM' or 'dm'.
-            The default is 'WZ'. 
-        use_bin_params : dict, optional
+            The default is 'wz'. 
+        use_mat_params : dict, optional
             To use different materials parameters from that given in the database.
-            Units should be same as in the database.
-            e.g. use_bin_params = {'AlN': {'mass_density': 3000}}
+            Simply join the binary names to construct the alloy name. e.g.,
+            for binaries=['AlN', 'GaN'] the alloy name is 'AlNGaN' or 'GaNAlN'.
+            Material parameters units should be same as in the database.
+            e.g. use_mat_params = {'AlN': {'mass_density': 3000}}.
+            If None, nothing will be done. The default is None.
+        alloy_type : string (case sensitive), optional [options: 'CatAni']
+            The alloy type name. Case sensitive. Only needed if alloy is of AxB1-xCxD1-y
+            kind. Will be ignored for alloy of type AxB1-x, AxByC1-x-y, AxByCzD1-x-y-z etc.
+            The default is None. 
         eps_n_3d : float, optional (unit: 1e18 cm^-2)
             Carrier density below eps_n_3d will be considered as zero. 
             The default is 1e-14 1e18 cm^-2 == 1e4 cm^-2.
@@ -473,14 +486,12 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         -------
         None.
 
-        """
-        if (pseudomorphic_strain == True) and (substrate is None):
-            raise ValueError('substrate tag can not be None when pseudomorphic_strain=True.')
+        """           
         _MobilityCarrier.__init__(self, compositions=compositions, binaries=binaries, 
-                                  alloy=alloy, system=system, pseudomorphic_strain=pseudomorphic_strain, 
-                                  substrate=substrate,alloy_type=alloy_type,
-                                  use_bin_params=use_bin_params, print_log=print_log, 
-                                  eps_n=eps_n_3d)
+                                  pseudomorphic_strain=pseudomorphic_strain, 
+                                  substrate=substrate, alloy_crystal_structure=alloy_crystal_structure,
+                                  use_mat_params=use_mat_params, alloy_type=alloy_type, 
+                                  print_log=print_log, eps_n=eps_n_3d)
         _Mobility3DCarrier.__init__(self)
         
     def calculate_elec_props_from_3DEC(self, n_d, T:float=300, 
@@ -547,10 +558,9 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         # Remove small values for the n_3d to avoid 0-division
         n_d_ = np.nan if (np.isscalar(n_d) and n_d < self.eps_n_3d) else\
             np.where(n_d < self.eps_n_3d, np.nan, n_d)   
-
         return_vals = self._cal_elec_props_from_3DEC(n_d_, 
                                                     self.alloy_params_.get('static_dielectric_constant'),
-                                                    self.alloy_params_.get('e_effective_mass'), 
+                                                    self.alloy_params_.get('carrier_effective_mass'), 
                                                     self.alloy_params_.get('PO_phonon_energy'),
                                                     T,inv_half_FD_method=inverse_half_FD_method,
                                                     return_dis_ints=return_dis_ints)
@@ -677,7 +687,7 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
 
         Returns
         -------
-        Mobility: pandas dataframe of compositions and mobilities (unit: cm^2 V^-1 S^-1).
+        Mobility: pandas dataframe of mobilities (unit: cm^2 V^-1 S^-1).
             Total (or individual contributions) local carrier mobility.
             
         """
@@ -709,12 +719,11 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         ----------
         n_d : 1d numpy array of float (unit: 1E18 cm^-3 )
             The position dependent carrier density distribution.
-        mu_d : 1d numpy array of float (unit: cm^2.V^-1.s^-1 )
-            The position dependent carrier mobility distribution.
+        mu_d : 1d numpy array of float or pandas dataframe of mobilities as 
+               returned from calculate_3D_mobility() function (unit: cm^2.V^-1.s^-1 )
+            The position dependent carrier mobility(ies) distribution.
         position : 1d numpy array of float (unit: nm)
             The position array.
-        log_info : string, optional [options: 'high','medium','low', None]
-            Determines the level of log to be printed. The default is None.
 
         Returns
         -------
@@ -724,8 +733,12 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             First number is the effective/average mobility calculated using first 
             moment of carrier density w.r.t 1/mu. Second one is the average mobility 
             calculated using first moment of carrier density w.r.t mu.
-        SheetResistance : float (unit: Ohm/sq)
-            Effective sheet resistance.
+            If mu_d is DataFrame, return is dictionary with keys and values 
+            corresponding to different contributions.
+        SheetResistance : tuple of two floats (unit: Ohm/sq)
+            Effective sheet resistance. Using average mobility values from average_mu.
+            If mu_d is DataFrame, return is dictionary with keys and values 
+            corresponding to different contributions.
 
         """ 
         return self._3dec_props(n_d, mu_d, position, eps_n_3d=self.eps_n_3d,

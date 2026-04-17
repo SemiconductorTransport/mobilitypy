@@ -5,7 +5,7 @@ Created on Tue Jan  6 14:03:02 2026
 
 @author: badal.mondal
 """
-from .database import database
+from .database import material_database
 
 #%%# ==============================================================================
 class _DataBase:
@@ -15,7 +15,7 @@ class _DataBase:
                       'bandgap': 'eV',
                       'bandgap_alpha': 'eV/K',
                       'bandgap_beta': 'K',
-                      'e_effective_mass': 'm0',
+                      'carrier_effective_mass': 'm0',
                       'alloy_scattering_potential': 'eV',
                       'static_dielectric_constant': 'epsilon_0',
                       'high_frequency_dielectric_constant': 'epsilon_0',
@@ -33,7 +33,7 @@ class _DataBase:
                               'bandgap': 'Bandgap',
                               'bandgap_alpha': "Bandgap Varshni parameter alpha",
                               'bandgap_beta': 'Bandgap Varshni parameter beta',
-                              'e_effective_mass': 'Electron effective mass',
+                              'carrier_effective_mass': 'Carrier effective mass',
                               'alloy_scattering_potential': 'Alloy scattering potential',
                               'static_dielectric_constant': 'Static dielectric constant',
                               'high_frequency_dielectric_constant': 'High frequency dielectric constant',
@@ -69,7 +69,7 @@ class _DataBase:
         database_info = '''
 Ref-1: Bassaler et. al., Adv. Electron. Mater., 11, 2400069 (2025)
 Ref-1': Mondal et. al., APL Electronic Devices 1, 026117 (2025)
-Ref-2: Pant et al, APL 117, 242105 (2020)
+Ref-2: Rinke PRB 77, 075202 (2008)
 Ref-3: http://www.ioffe.ru/SVA/NSM/Semicond/index.html
 Ref-4: Vurgaftman et. al., J. Appl. Phys. 94, 3675–3696 (2003)
 Ref-5: Shimada, Jpn. J. Appl. Phys., Vol. 45, No. 12 (2006)
@@ -89,7 +89,7 @@ to print parameter values for the specific material""")
             for key, value in cls.database_units.items():
                 print(f'{cls.parameter_name_mapping.get(key)} => {key}: {value}')
         else:
-            params_db = database.get(for_material).copy()
+            params_db = material_database.get(for_material).copy()
             if params_db:
                 database_header_info = f"""
 NOTE: For ternary or higher-order materials, the parameter values represent 
@@ -100,6 +100,8 @@ The database contains the following information for {for_material}:
                 for key, value in params_db.items():
                     if key.startswith('C_'):
                         print(f'{cls.parameter_name_mapping.get("C_ij")} => {key}: {value} {cls.database_units.get("C_ij")}')
+                    elif key.startswith('e_'):
+                        print(f'{cls.parameter_name_mapping.get("e_ij")} => {key}: {value} {cls.database_units.get("e_ij")}')
                     else:
                         print(f'{cls.parameter_name_mapping.get(key)} => {key}: {value} {cls.database_units.get(key)}')
             else:

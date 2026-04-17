@@ -33,7 +33,10 @@ class _GeneratePlots:
                   'ytick.major.size':5,
                   'ytick.minor.width':2,
                   'ytick.minor.size':3,
-                  'errorbar.capsize':2}
+                  'errorbar.capsize':2, 
+                  'lines.markersize':12,
+                  'lines.linewidth':2, 
+                  'lines.linestyle':'-'}
         plt.rcParams.update(params)
         plt.rc('font', size=24)
 

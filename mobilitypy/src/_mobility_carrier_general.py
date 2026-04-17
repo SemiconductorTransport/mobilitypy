@@ -15,10 +15,10 @@ class _MobilityCarrier(_AlloyParams):
     The functions in this class sets general parameters for the mobility of nD carrier gas.  
     '''
     
-    def __init__(self, compositions=None, binaries=['AlN', 'GaN'], alloy='AlGaN', 
-                 system='ternary', pseudomorphic_strain=False, substrate=None, 
-                 alloy_type='WZ', use_bin_params:dict=None, 
-                 print_log=None, eps_n=1e-10):
+    def __init__(self, compositions=None, binaries=['AlN', 'GaN'], 
+                 pseudomorphic_strain:bool=False, substrate:str|float=None, 
+                 alloy_crystal_structure:str='wz', use_mat_params:dict=None, 
+                 alloy_type:str=None, print_log=None, eps_n=1e-10):
         """
         Initiation function of the class _MobilityCarrier.
         
@@ -33,13 +33,6 @@ class _MobilityCarrier(_AlloyParams):
             can be found in the README. For ternary alloy 'compositions' correspond 
             to the 1st binary in the list; for quaternaries 1st binary is 1st composition
             and so on (from left to right). The default is ['AlN', 'GaN'].
-        alloy : string (case sensitive), optional
-            The alloy name. The name should match the name in database. All   
-            implemented materials name list can be found in the README. Case sensitive.
-            The default is 'AlGaN'.
-        system : string (case sensitive), optional
-            Type of the alloy. E.g. 'ternary'. 
-            The default is 'ternary'.
         pseudomorphic_strain : bool, optional
             Whether to consider pseudomorphic strain.
             The default is False.
@@ -48,18 +41,24 @@ class _MobilityCarrier(_AlloyParams):
             or the substrate in-plane lattice parameter (if float, Angstrom unit).
             The default is None. Error will be raised if substrate=None and 
             pseudomorphic_strain=True.
-        alloy_type :  str, optional 
-            The crystal type of alloy. This will be considered when calculating
+        alloy_crystal_structure :  str, optional [options: 'WZ', 'ZB', 'DM']
+            The crystal type of the materials. This will be considered when calculating
             parameters like Poisson ratio etc.
             Use following abbreviation name:
                 for wurtzite use 'WZ' or 'wz'.
                 for zincblende use 'ZB' or 'zb'.
                 for diamond use 'DM' or 'dm'.
-            The default is 'WZ'. 
-        use_bin_params : dict, optional
+            The default is 'wz'. 
+        use_mat_params : dict, optional
             To use different materials parameters from that given in the database.
-            Units should be same as in the database.
-            e.g. use_bin_params = {'AlN': {'mass_density': 3000}}
+            Simply join the binary names to construct the alloy name. e.g.,
+            for binaries=['AlN', 'GaN'] the alloy name is 'AlNGaN' or 'GaNAlN'.
+            Material parameters units should be same as in the database.
+            e.g. use_mat_params = {'AlN': {'mass_density': 3000}}
+        alloy_type : string (case sensitive), optional [options: 'CatAni']
+            The alloy type name. Case sensitive. Only needed if alloy is of AxB1-xCxD1-y
+            kind. Will be ignored for alloy of type AxB1-x, AxByC1-x-y, AxByCzD1-x-y-z etc.
+            The default is None. 
         print_log : string, optional => ['high','medium','low', None]
             Determines the level of log to be printed. The default is None.
         eps_n : float, optional (unit: nm^-2 for 2DEG or 1e18 cm^-2 for 3DG)
@@ -72,31 +71,20 @@ class _MobilityCarrier(_AlloyParams):
         None.
 
         """
-        if (pseudomorphic_strain == True) and (substrate is None):
+        if pseudomorphic_strain and (substrate is None):
+            # This allows to return Error in the very begining without starting any calculations.
             raise ValueError('substrate tag can not be None when pseudomorphic_strain=True.')
         
         self.print_info = print_log
         if self.print_info is not None: self.print_info = self.print_info.lower()
 
         self.eps_n = eps_n
-
         _AlloyParams.__init__(self, compositions=compositions, binaries=binaries, 
-                              alloy=alloy, alloy_type=alloy_type)
-        self._get_alloy_params(system=system, use_bin_params=use_bin_params)
-        if pseudomorphic_strain:
-            if isinstance(substrate, str):
-                substrate_params_dic = self._get_substrate_properties(substrate)
-                substrate_lp = substrate_params_dic.get('lattice_a0') # substrate in-plane lattice parameter
-            else:    
-                substrate_lp = float(substrate)
-                
-            lattice_a = self.alloy_params_.get('lattice_a0') 
-            lattice_c = self.alloy_params_.get('lattice_c0') 
-            epsilon_zz = self.alloy_params_.get('biaxial_distortion_coefficient')\
-                *((substrate_lp - lattice_a) / lattice_a)
-            # Re-populate the lattice parameters
-            self.alloy_params_['lattice_a0']  = np.array([substrate_lp]*len(lattice_a)) 
-            self.alloy_params_['lattice_c0']= lattice_c * (1.0 + epsilon_zz)
+                              alloy_crystal_structure=alloy_crystal_structure,
+                              alloy_type=alloy_type)
+        self._get_alloy_params(use_mat_params=use_mat_params)
+        if pseudomorphic_strain: self._cal_pseudomorphic_strain(substrate)
+        return
             
     def _set_params_general(self, m_star, eps_s, eps_h, c_lattice, a_lattice, sc_potential, 
                             n_dis, f_dis, n_ion_impurity, mass_density, v_LA, E_pop, 

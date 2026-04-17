@@ -5,7 +5,7 @@ the bowing coefficients.
 
 Ref-1: Bassaler et. al., Adv. Electron. Mater., 11, 2400069 (2025)
 Ref-1': Mondal et. al., APL Electronic Devices 1, 026117 (2025)
-Ref-2: Pant et al, APL 117, 242105 (2020)
+Ref-2: Rinke PRB 77, 075202 (2008)
 Ref-3: http://www.ioffe.ru/SVA/NSM/Semicond/index.html
 Ref-4: Vurgaftman et. al., J. Appl. Phys. 94, 3675–3696 (2003)
 Ref-5: Shimada, Jpn. J. Appl. Phys., Vol. 45, No. 12 (2006)
@@ -20,7 +20,7 @@ lattice_c0 => angstrom # Ref-4
 bandgap => eV # Ref-4
 bandgap_alpha => eV/K # Ref-4
 bandgap_beta => K # Ref-4
-e_effective_mass => m0 # Ref-2
+carrier_effective_mass => m0 # Ref-2
 alloy_scattering_potential => eV # Ref-2
 static_dielectric_constant => epsilon_0
 high_frequency_dielectric_constant => epsilon_0
@@ -32,7 +32,7 @@ electromechanical_coupling_const => unitless
 C_ij => GPa # Ref-4
 e_ij => Piezoelectric constants # C/m^2 # e_15 from Ref-5; e33, e31 from Ref-6
 '''
-database = {
+material_database = {
             # ========================== Binaries =============================
             # GaN, AlN
             'GaN': 
@@ -42,7 +42,7 @@ database = {
              'bandgap': 3.510,
              'bandgap_alpha': 0.909e-3,
              'bandgap_beta': 830,
-             'e_effective_mass': 0.20,
+             'carrier_effective_mass': 0.186,
              'alloy_scattering_potential': 1.0,
              'static_dielectric_constant': 8.90,
              'high_frequency_dielectric_constant': 5.35,
@@ -61,7 +61,7 @@ database = {
              'bandgap': 6.25,
              'bandgap_alpha': 1.799e-3,
              'bandgap_beta': 1462,
-             'e_effective_mass': 0.31,
+             'carrier_effective_mass': 0.322,
              'alloy_scattering_potential': 1.8,
              'static_dielectric_constant': 8.50,
              'high_frequency_dielectric_constant': 4.60,
@@ -82,7 +82,7 @@ database = {
              'bandgap': 0.7,
              'bandgap_alpha': 0,
              'bandgap_beta': 0,
-             'e_effective_mass': 0,
+             'carrier_effective_mass': 0,
              'alloy_scattering_potential': -1.6,
              'static_dielectric_constant': 0,
              'high_frequency_dielectric_constant': 0,

@@ -69,7 +69,7 @@ class _Mobility3DCarrier:
 
         """      
         #======================================================================
-        self._set_params_general(self.alloy_params_.get('e_effective_mass'), 
+        self._set_params_general(self.alloy_params_.get('carrier_effective_mass'), 
                                  self.alloy_params_.get('static_dielectric_constant'),
                                  self.alloy_params_.get('high_frequency_dielectric_constant'), 
                                  self.alloy_params_.get('lattice_c0'), 
@@ -206,7 +206,8 @@ class _Mobility3DCarrier:
                                                           FD_int_approach='minimax_piecewise')    
         self.F1hRatio = F_m_1h/F_1h
         # h_bar**2*e_charge**2/(8*e_mass*eps_0*k_B**2)*1e24 = 23210.19722793661
-        self.dis_B_fact = 23210.19722793661*self.n_3d_*self.F1hRatio/(self.m_star_*self.eps_s_*self.temp_*self.temp_)
+        self.dis_B_fact = 23210.19722793661*self.n_3d_*self.F1hRatio/\
+                           (self.m_star_*self.eps_s_*self.temp_*self.temp_)
         return
     
     def _td_chg_dis_mu(self): 
@@ -214,26 +215,27 @@ class _Mobility3DCarrier:
             #4k_F^2 lambda^2 = 4*3**(1/3)*h_bar**2*pi_**(8/3)*eps_0/e_charge**2/e_mass*1e8 = 0.051430964880517044
             fact_12 = (1+0.051430964880517044*self.n_3d_**(1/3)*self.eps_s_/self.m_star_)**(3/2)
             # e_charge*3**(2/3)/(h_bar*pi_**(8/3))*1e-12 = 149.27327984905628 cm^2V^-1s^-1
-            return 149.27327984905628 * self.c_lp * self.n_3d_**(2/3) * fact_12 \
-                    / self.n_dislocation_ / self.f_dislocation_**2  
+            return 149.27327984905628 * self.c_lp * self.c_lp * self.n_3d_**(2/3) \
+                    * fact_12 / (self.n_dislocation_*self.f_dislocation_*self.f_dislocation_)  
         elif self.carrier_degenracy_limit_ == 'nondegenerate':
             # 128*np.sqrt(2)/np.sqrt(pi_)*(eps_0**(3/2)*k_B/np.sqrt(e_mass)/e_charge**2*1e-16)=0.15163209085564022
             # 16*np.sqrt(2)*(eps_0**(3/2)*k_B/np.sqrt(e_mass)/e_charge**2*1e-16) = 0.03359511041974182
-            return 0.15163209085564022 * self.c_lp*self.c_lp*self.temp_\
+            return 0.15163209085564022 * self.c_lp * self.c_lp * self.temp_\
                     *np.sqrt(self.eps_s_*self.eps_s_*self.eps_s_*self.n_3d_/self.m_star_)\
-                        / self.n_dislocation_ / self.f_dislocation_**2
-        else:   
-            I_eta = _FermiDiracInt._FD_dis_chg_Integration(self.eta_f_, self.dis_B_fact)            
+                        / (self.n_dislocation_*self.f_dislocation_*self.f_dislocation_)
+        else:  
+            I_eta = _FermiDiracInt._FD_dis_chg_Integration(self.eta_f_, self.dis_B_fact)  
             #8*np.sqrt(2)/pi_**2 * np.sqrt(e_mass*k_B**3)*eps_0/(e_charge*h_bar**2)*1e-28=0.027890781017309893
-            return 0.027890781017309893*self.c_lp*self.c_lp*self.eps_s_*np.sqrt(self.m_star_*self.temp_**3)\
-                        /(self.n_dislocation_*self.f_dislocation_**2)*self.F1hRatio*I_eta
+            return 0.027890781017309893*self.c_lp*self.c_lp*self.eps_s_\
+                    *np.sqrt(self.m_star_*self.temp_*self.temp_*self.temp_)*self.F1hRatio*I_eta\
+                        /(self.n_dislocation_*self.f_dislocation_*self.f_dislocation_)
                         
     def _td_str_dis_mu(self): 
         I_eta = _FermiDiracInt._FD_dis_str_Integration(self.eta_f_, self.dis_B_fact)     
         poisson_part = (1.0-self.poisson_ratio)/(1.0-2.0*self.poisson_ratio)
         #e_charge*np.sqrt(2*k_B/e_mass)/(3*pi_*pi_*eps_0)*1e12= 3364750.021017146
         return 3364750.021017146*np.sqrt(self.temp_/self.m_star_)*poisson_part*poisson_part\
-                /(self.eps_s_*self.n_dislocation_*self.a_lp**2*self.E_d**2)*self.F1hRatio*I_eta 
+                /(self.eps_s_*self.n_dislocation_*self.a_lp*self.a_lp*self.E_d*self.E_d)*self.F1hRatio*I_eta 
                 
     def _ion_imp_mu(self):
         # 24*eps_0*e_mass*k_B**2/(h_bar**2*e_charge**2)*1e-24 = 0.00012925353328704564
@@ -321,7 +323,7 @@ class _Mobility3DCarrier:
             dis_B_fact = 23210.19722793661*n_3d*F1hRatio/(m_star*eps_s*T*T)
             I_eta_chg = _FermiDiracInt._FD_dis_chg_Integration(scaled_Ef,dis_B_fact)  
             I_eta_str = _FermiDiracInt._FD_dis_str_Integration(scaled_Ef,dis_B_fact)
-            return (I_eta_chg, I_eta_str)
+            return (F1hRatio*I_eta_chg, F1hRatio*I_eta_str)
         
         Fermi_energy_Gen = 8.617333262145179e-05 * T * scaled_Ef.copy() # k_B J.K^-1 = k_B/e_charge eV.K^-1
         #np.sqrt(e_charge*e_charge/eps_0/k_B)*1e4 = 144.9086756309392
@@ -354,8 +356,8 @@ class _Mobility3DCarrier:
                 [tau_c_by_tau_q_dis_D, tau_c_by_tau_q_dis_ND], 
                 Fermi_wave_vector, _pop_wave_vector)
     
-    @staticmethod
-    def _3dec_props(n_d, mu_d, position, eps_n_3d=1e-14, log_info=None):
+    @classmethod
+    def _3dec_props(cls, n_d, mu_d, position, eps_n_3d=1e-14, log_info=None):
         """
         This function calculates the effective/average properies of a 3D carrier distribution.
 
@@ -363,8 +365,8 @@ class _Mobility3DCarrier:
         ----------
         n_d : 1d numpy array of float (unit: 1E18 cm^-3 )
             The position dependent carrier density distribution.
-        mu_d : 1d numpy array of float (unit: cm^2.V^-1.s^-1 )
-            The position dependent carrier mobility distribution..
+        mu_d : 1d numpy array of float or pandas dataframe of mobilities as 
+               returned from calculate_3D_mobility() function (unit: cm^2.V^-1.s^-1 )
         position : 1d numpy array of float (unit: nm)
             The position array.
         eps_n_3d : float, optional (unit: 1e18 cm^-2)
@@ -381,33 +383,55 @@ class _Mobility3DCarrier:
             First number is the effective/average mobility calculated using first 
             moment of carrier density w.r.t 1/mu. Second one is the average mobility 
             calculated using first moment of carrier density w.r.t mu.
-        SheetResistance : float (unit: Ohm/sq)
-            Effective sheet resistance.
+            If mu_d is DataFrame, return is dictionary with keys and values 
+            corresponding to different contributions.
+        SheetResistance : tuple of two floats (unit: Ohm/sq)
+            Effective sheet resistance. Using average mobility values from average_mu.
+            If mu_d is DataFrame, return is dictionary with keys and values 
+            corresponding to different contributions.
 
         """
         n_d_ = 0 if (np.isscalar(n_d) and n_d < eps_n_3d) else np.where(n_d < eps_n_3d, 0, n_d)  
         IntegratedEdensity = integrate.trapezoid(n_d_, x=position) # 1e11 cm^-2
         
+        if isinstance(mu_d, pd.DataFrame):
+            average_mu, SheetResistance = {}, {}
+            for keys in mu_d:
+                if keys.startswith('mu_'):
+                    mu_d_tmp = mu_d[keys].to_numpy(dtype=float)
+                    average_mu_ = cls._cal_mobility_averages(n_d_, mu_d_tmp, 
+                                                             IntegratedEdensity, 
+                                                             position)
+                    SheetResistance[keys] = cls._sheet_resistance(average_mu_, 
+                                                                  IntegratedEdensity)
+                    average_mu[keys] = average_mu_
+        else:
+            average_mu = cls._cal_mobility_averages(n_d_, mu_d, IntegratedEdensity, position)
+            SheetResistance = cls._sheet_resistance(average_mu, IntegratedEdensity)
+            if log_info is not None:
+               print(f'\to ave_es = {IntegratedEdensity*1e-2:0.2f} x 1E13 cm^-2')
+               print(f'\to ave_mu = {average_mu[0]:.2f} ({average_mu[1]:.2f}) cm^2.V^-1.s^-1')
+               print(f'\to Rsh = {SheetResistance[0]:.2f} ({SheetResistance[1]:.2f}) Ohm/sq')
+        return IntegratedEdensity*1e-2, average_mu, SheetResistance
+    
+    @staticmethod
+    def _sheet_resistance(average_mu, IntegratedEdensity):
+        # R = 1/(e * carrier_density * mu) ohm/square
+        # 1/(1e11*e_charge) = 62415090.744607635 Ohm/sq
+        return tuple([62415090.744607635/(ave_mu*IntegratedEdensity) for ave_mu in average_mu])
+        
+    @staticmethod
+    def _cal_mobility_averages(n_d_, mu_d, IntegratedEdensity, position):
         ## Procedure-1: using inverse mobility
         density_mobility_ratio = n_d_/mu_d
         density_mobility_ratio[np.isnan(density_mobility_ratio)] = 0
-        
         mobility_first_moment_nominator = integrate.trapezoid(density_mobility_ratio, x=position) 
-        
-        
-        average_mu = IntegratedEdensity/mobility_first_moment_nominator # == 1.0/(mobility_first_moment_nominator/IntegratedEdensity)
+        # == 1.0/(mobility_first_moment_nominator/IntegratedEdensity)
+        average_mu = IntegratedEdensity/mobility_first_moment_nominator 
         
         # Procedure-2: using mobility
         density_mobility_ = n_d_*mu_d
         density_mobility_[np.isnan(density_mobility_)] = 0
         density_weighted_mobility_ = integrate.trapezoid(density_mobility_, x=position)
         average_mu_ = density_weighted_mobility_/IntegratedEdensity
-        
-        # 1/(1e11*e_charge) = 62415090.744607635
-        SheetResistance = 62415090.744607635/(average_mu*IntegratedEdensity) # Ohm/sq
-       
-        if log_info is not None:
-           print(f'\to ave_es = {IntegratedEdensity*1e-2:0.2f} x 1E13 cm^-2')
-           print(f'\to ave_mu = {average_mu:.2f} ({average_mu_:.2f}) cm^2.V^-1.s^-1')
-           print(f'\to Rsh = {SheetResistance:.2f} Ohm/sq')
-        return IntegratedEdensity*1e-2, (average_mu, average_mu_), SheetResistance
+        return (average_mu, average_mu_)
