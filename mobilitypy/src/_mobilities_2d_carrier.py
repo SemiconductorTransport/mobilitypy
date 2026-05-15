@@ -335,7 +335,7 @@ class _Mobility2DCarrier:
         # In case of self.q_TF_by_2k_F, the division is done by k_F. This
         # term arrises in most scattering integration.
         # => this safe guard ensures we do not get any scattering in cases for
-        # very low n_2d or no ally scarring for pure binary systems.
+        # very low n_2d or no alloy scarring for pure binary systems.
         if self.n_2d_ < self.eps_n_2d: return 0
         #*****************************************
         # (m0*e^4)/(8*h_bar^3*eps_0^2) * 1e-4 = 81.6046000430338 1e12 s^-1
@@ -358,7 +358,7 @@ class _Mobility2DCarrier:
         # In case of self.q_TF_by_2k_F, the division is done by k_F. This
         # term arrises in most scattering integration.
         # => this safe guard ensures we do not get any scattering in cases for
-        # very low n_2d or no ally scarring for pure binary systems.
+        # very low n_2d or no alloy scarring for pure binary systems.
         if self.n_2d_ < self.eps_n_2d: return 0
         #*****************************************
         # (m0*e^4)/(4*pi*h_bar^3*eps_0^2) * (1e8 / 1e6**4/ 1e-8**2) = 519511.0190323496 1e12 s^-1
@@ -380,7 +380,7 @@ class _Mobility2DCarrier:
         # In case of self.q_TF_by_2k_F, the division is done by k_F. This
         # term arrises in most scattering integration.
         # => this safe guard ensures we do not get any scattering in cases for
-        # very low n_2d or no ally scarring for pure binary systems.
+        # very low n_2d or no alloy scarring for pure binary systems.
         if self.n_2d_ < self.eps_n_2d: return 0
         #*****************************************
         #(e_mass*e_charge**2)/(2*pi_*h_bar**3)*1e-4*1e-20 = 0.003173229123349822 1e12 s^-1

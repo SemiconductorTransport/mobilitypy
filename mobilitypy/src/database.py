@@ -34,9 +34,30 @@ e_ij => Piezoelectric constants # C/m^2 # e_15 from Ref-5; e33, e31 from Ref-6
 '''
 material_database = {
             # ========================== Binaries =============================
+            'test_sample': 
+            {'comment': 'Test sample',
+             'mass_density': 0,
+             'lattice_a0': 0,
+             'lattice_c0': 0,
+             'bandgap': 0,
+             'bandgap_alpha': 0,
+             'bandgap_beta': 0,
+             'carrier_effective_mass': 0,
+             'alloy_scattering_potential': 0,
+             'static_dielectric_constant': 0,
+             'high_frequency_dielectric_constant': 0,
+             'LA_phonon_velocity': 0,
+             'TA_phonon_velocity': 0,
+             'CB_deformation_potential': 0,
+             'PO_phonon_energy': 0,
+             #'electromechanical_coupling_const': 0,
+             'C_11': 0, 'C_12': 0, 'C_13': 0, 'C_33': 0, 'C_44': 0,
+             'e_31': 0, 'e_33': 0, 'e_15': 0 
+             },
             # GaN, AlN
             'GaN': 
-            {'mass_density': 6150,
+            {'comment': 'Parameter values are taken from ...',
+             'mass_density': 6150,
              'lattice_a0': 3.189,
              'lattice_c0': 5.185,
              'bandgap': 3.510,
@@ -55,7 +76,8 @@ material_database = {
              'e_31': -1.863, 'e_33': 1.020, 'e_15': -0.38 
              },
            'AlN': 
-            {'mass_density': 3230,
+            {'comment': 'Parameter values are taken from ...',
+             'mass_density': 3230,
              'lattice_a0': 3.112,
              'lattice_c0': 4.982,
              'bandgap': 6.25,
@@ -76,7 +98,8 @@ material_database = {
             # ========================== Ternaries ============================
             # AlGaN
            'AlGaN': # AlGaN == AlxGa(1-x)N, GaxAl(1-x)N  => Binaries=[AlN, GaN]
-            {'mass_density': 0,
+            {'comment': 'Parameter values are taken from ...',
+             'mass_density': 0,
              'lattice_a0': 0,
              'lattice_c0': 0,
              'bandgap': 0.7,

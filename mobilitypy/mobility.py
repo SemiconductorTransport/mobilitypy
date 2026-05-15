@@ -31,6 +31,18 @@ class DataBase(_DataBase):
         """
         self.dtbase._print_database(for_material=for_material)
         return
+    
+    def print_materials_available_in_database(self):
+        """
+        Print the materials available so far in the database.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.dtbase._print_materials_available_in_database()
+        return
         
     def update_database(self, for_material=None, with_new_database=None):
         """
@@ -58,7 +70,8 @@ class DataBase(_DataBase):
         self.dtbase._update_database(for_material=for_material, 
                                      with_new_database=with_new_database)
         return
-        
+
+#==============================================================================
 class AlloyParams(_AlloyParams):
     '''
     The functions in this class calculates the parameters for alloy from their
@@ -119,6 +132,7 @@ class AlloyParams(_AlloyParams):
                               alloy_type=alloy_type)
         return self._get_alloy_params(use_mat_params=use_mat_params)
 
+#==============================================================================
 class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
     """
     The functions in this class calculates the mobility of 2D carrier gas.  
@@ -421,7 +435,8 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
                                                T_corect_bandgap=T_corect_bandgap,
                                                direct_bandgap=direct_bandgap, 
                                                indirect_bandgap=indirect_bandgap)
-    
+
+#==============================================================================
 class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
     """
     The functions in this class calculates the mobility of 3D carrier gas.  
@@ -744,6 +759,7 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         return self._3dec_props(n_d, mu_d, position, eps_n_3d=self.eps_n_3d,
                                 log_info=self.print_info)
 
+#==============================================================================
 class Plottings(_plot_mobilities):  
     """
     Plotting class for mobilitypy.
@@ -945,3 +961,4 @@ class Plottings(_plot_mobilities):
                           show_legend=show_legend, show_colorbar=show_colorbar, 
                           colorbar_label=colorbar_label, savefig=savefig,
                           vmin=vmin, vmax=vmax, show_plot=show_plot, **kwargs_savefig)
+#==============================================================================

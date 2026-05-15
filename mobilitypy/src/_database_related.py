@@ -79,33 +79,40 @@ Chapter - scattering, mobility, and velocity saturation, page 555, USA, 2002.
         '''
         database_header_info = """
 The database contains the following information for each material. 
-For ternary or higher-order materials, the parameter values represent 
-the bowing coefficients.
+For ternary or higher-order materials, the parameter values represent the bowing coefficients.
         """
         if for_material is None:
+            for_material = 'test_sample'
             print("""NOTE: Use 'print(DataBase().print_database(for_material=<material name> e.g. 'AlN'))'
 to print parameter values for the specific material""")
             print(f'{database_header_info}{database_info}\nParameters (Name description => parameter name : unit):')  
-            for key, value in cls.database_units.items():
-                print(f'{cls.parameter_name_mapping.get(key)} => {key}: {value}')
-        else:
-            params_db = material_database.get(for_material).copy()
-            if params_db:
-                database_header_info = f"""
-NOTE: For ternary or higher-order materials, the parameter values represent 
-the bowing coefficients.
+
+        params_db = material_database.get(for_material).copy()
+        if params_db:
+            database_header_info = f"""
+NOTE: For ternary or higher-order materials, the parameter values represent the bowing coefficients.
 The database contains the following information for {for_material}: 
-                """
-                print(database_header_info)
-                for key, value in params_db.items():
-                    if key.startswith('C_'):
-                        print(f'{cls.parameter_name_mapping.get("C_ij")} => {key}: {value} {cls.database_units.get("C_ij")}')
-                    elif key.startswith('e_'):
-                        print(f'{cls.parameter_name_mapping.get("e_ij")} => {key}: {value} {cls.database_units.get("e_ij")}')
-                    else:
-                        print(f'{cls.parameter_name_mapping.get(key)} => {key}: {value} {cls.database_units.get(key)}')
-            else:
-                print(f'Error: "{for_material}" material does not exists in database yet. Contact developers.')
+            """
+            print(database_header_info)
+            for key, value in params_db.items():
+                if key.startswith('comment'):
+                    print(f'{key}: {value}')
+                elif key.startswith('C_'):
+                    print(f'{cls.parameter_name_mapping.get("C_ij")} => {key}: {value} {cls.database_units.get("C_ij")}')
+                elif key.startswith('e_'):
+                    print(f'{cls.parameter_name_mapping.get("e_ij")} => {key}: {value} {cls.database_units.get("e_ij")}')
+                else:
+                    print(f'{cls.parameter_name_mapping.get(key)} => {key}: {value} {cls.database_units.get(key)}')
+        else:
+            print(f'Error: "{for_material}" material does not exists in database yet. Contact developers.')
+            
+    @staticmethod
+    def _print_materials_available_in_database():
+        database_footer_info = """
+NOTE: For ternary or higher-order materials, the parameter values represent the bowing coefficients.
+        """
+        avail_material_list = ', '.join(list(material_database.keys()))
+        print(f'* Available materials name: {avail_material_list}{database_footer_info}')
                 
     def _update_database(self, for_material=None, with_new_database=None):
         """

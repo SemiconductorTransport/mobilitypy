@@ -137,7 +137,7 @@ class _Mobility3DCarrier:
         if self.total_mobility_:
             if self.print_info is not None: print('\t-- Calculating total mobility')
             #print(list(MuDataframe.keys()))
-            MuDataframe['mu_TOT'] = 1/((1/MuDataframe).sum(axis=1, skipna=True))
+            MuDataframe['mu_TOT'] = 1/((1/MuDataframe).sum(axis=1, skipna=True, min_count=1))
         #======================================================================    
         if self.print_info is not None: print(f'{"="*72}')
         #======================================================================
@@ -146,9 +146,8 @@ class _Mobility3DCarrier:
         else:
             if self.td_dislocation_chg_effect_ and self.td_dislocation_strain_effect_:
                 # Postprocessing: total DIS
-                XX = ['mu_DIS_TD_CHG', 'mu_DIS_TD_STR']
-                MuDataframe['mu_DIS_TD'] = 1/((1/MuDataframe[XX]).sum(axis=1, skipna=True))
-                
+                MuDataframe['mu_DIS_TD'] = 1/((1/MuDataframe[['mu_DIS_TD_CHG', 'mu_DIS_TD_STR']])
+                                              .sum(axis=1, skipna=True, min_count=1))              
             return MuDataframe
         #======================================================================
     
@@ -433,5 +432,6 @@ class _Mobility3DCarrier:
         density_mobility_ = n_d_*mu_d
         density_mobility_[np.isnan(density_mobility_)] = 0
         density_weighted_mobility_ = integrate.trapezoid(density_mobility_, x=position)
+        #print(IntegratedEdensity, mobility_first_moment_nominator, density_weighted_mobility_)
         average_mu_ = density_weighted_mobility_/IntegratedEdensity
         return (average_mu, average_mu_)
