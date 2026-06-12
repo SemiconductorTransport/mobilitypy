@@ -40,11 +40,14 @@ class _Mobility3DCarrier:
             
         The considered scattering mechanism are:
             Alloy disorder limited (AD)
-            Threading dislocation mediated (DIS_TD)
+            Charged threading dislocation mediated (DIS_TD_CHG)
+            Strain filed from threading dislocation (DIS_TD_STR)
             Piezoelectric phonon effect (PE)
             Acoustic deformation potential phonon (DP)
             Polar optical phonon (POP)
             Ionized impurity (ION_IMP)
+            Total acoustic phonon (ACP=1/(1/DP+1/PE))
+            Total threading dislocation mediated (DIS_TD=1/(1/DIS_TD_CHG+1/DIS_TD_STR))
 
         Parameters
         ----------
@@ -64,8 +67,25 @@ class _Mobility3DCarrier:
 
         Returns
         -------
-        pandas dataframe of compositions and mobilities (unit: cm^2 V^-1 S^-1).
-            Total (or individual contributions) sheet mobility. 
+        Mobility: pandas dataframe of mobilities (unit: cm^2 V^-1 S^-1).
+            Total (or individual contributions) local carrier mobility.
+            
+            NOTE-1: When either td_dislocation_chg_effect or 
+            td_dislocation_strain_effect is True, total dislocation mobility 
+            is also calculated. 
+            If only td_dislocation_chg_effect=True: mu_DIS_TD = mu_DIS_TD_CHG
+            If only td_dislocation_str_effect=True: mu_DIS_TD = mu_DIS_TD_STR
+            If td_dislocation_chg_effect=True and td_dislocation_strain_effect=True:
+                mu_DIS_TD = (1/mu_DIS_TD_CHG + 1/mu_DIS_TD_STR)^-1
+                
+            NOTE-2: When either piezoelectric_effect or 
+            deformation_potential_effect is True, total acoustic phonon mediated
+            mobility is also calculated. 
+            If only piezoelectric_effect=True: mu_ACP = mu_PE
+            If only deformation_potential_effect=True: mu_ACP = mu_DP
+                mu_DIS_TD = mu_DIS_TD_STR
+            If piezoelectric_effect=True and deformation_potential_effect=True:
+                mu_ACP = (1/mu_PE + 1/mu_DP)^-1
 
         """      
         #======================================================================
@@ -94,9 +114,10 @@ class _Mobility3DCarrier:
         #======================================================================    
         if self.td_dislocation_chg_effect_ or self.td_dislocation_strain_effect_:
             self._dis_facts()
-        if self.alloy_disordered_effect_ or self.acoustic_phonon_effect_:
+        if self.alloy_disordered_effect_ or self.deformation_potential_effect_:
             self._ln_1p_exp_xi() # Calculates the FD oth order integral
         #======================================================================
+        total_acoustic_phonon, total_dislocation_effect = [], []
         mobility = {}
         if self.alloy_disordered_effect_:
             if self.print_info is not None: print('\t-- Calculating alloy-disordered mobility')
@@ -112,13 +133,15 @@ class _Mobility3DCarrier:
             else:
                 mobility['mu_POP'] = self._pop_mu()
 
-        if self.acoustic_phonon_effect_:
+        if self.deformation_potential_effect_:
             if self.print_info is not None: print('\t-- Calculating acoustic phonon deformation potential effect mobility')
             mobility['mu_DP'] = self._ac_dp_mu()
+            total_acoustic_phonon.append('mu_DP')
             
         if self.piezoelectric_effect_:
             if self.print_info is not None: print('\t--- Calculating piezoelectric phonon effect mobility')
             mobility['mu_PE'] = self._mu_pz()
+            total_acoustic_phonon.append('mu_PE')
             
         if self.ionized_impurity_effect_: 
              if self.print_info is not None: print('\t-- Calculating ionized impurity limited mobility')
@@ -127,26 +150,33 @@ class _Mobility3DCarrier:
         if self.td_dislocation_chg_effect_:
             if self.print_info is not None: print('\t-- Calculating charge line dislocation effect mobility')
             mobility['mu_DIS_TD_CHG'] = self._td_chg_dis_mu()
+            total_dislocation_effect.append('mu_DIS_TD_CHG')
             
         if self.td_dislocation_strain_effect_: 
             if self.print_info is not None: print('\t-- Calculating dislocation strain field effect mobility')
             mobility['mu_DIS_TD_STR'] = self._td_str_dis_mu()
+            total_dislocation_effect.append('mu_DIS_TD_STR')
         #======================================================================
+        
         MuDataframe = pd.DataFrame.from_dict(mobility)
         #======================================================================
-        if self.total_mobility_:
+        if self.total_mobility_ or self.return_only_total_mobility:
             if self.print_info is not None: print('\t-- Calculating total mobility')
             #print(list(MuDataframe.keys()))
             MuDataframe['mu_TOT'] = 1/((1/MuDataframe).sum(axis=1, skipna=True, min_count=1))
         #======================================================================    
         if self.print_info is not None: print(f'{"="*72}')
         #======================================================================
-        if self.only_total_mobility:
+        if self.return_only_total_mobility:
             return MuDataframe['mu_TOT']
         else:
-            if self.td_dislocation_chg_effect_ and self.td_dislocation_strain_effect_:
+            if len(total_acoustic_phonon) > 0:
+                # Postprocessing: total Acoustic phonon
+                MuDataframe['mu_ACP'] = 1/((1/MuDataframe[total_acoustic_phonon])
+                                              .sum(axis=1, skipna=True, min_count=1)) 
+            if len(total_dislocation_effect) > 0:
                 # Postprocessing: total DIS
-                MuDataframe['mu_DIS_TD'] = 1/((1/MuDataframe[['mu_DIS_TD_CHG', 'mu_DIS_TD_STR']])
+                MuDataframe['mu_DIS_TD'] = 1/((1/MuDataframe[total_dislocation_effect])
                                               .sum(axis=1, skipna=True, min_count=1))              
             return MuDataframe
         #======================================================================
@@ -164,7 +194,7 @@ class _Mobility3DCarrier:
                        *self.n_3d_*self.comps_*(1.0-self.comps_)          
         # Remove small values for both the n_3d and comps_ or (1-comps_)
         demoninator_ = np.where(demoninator_ < eps_den, np.nan, demoninator_)
-        #(2*e_charge*h_bar*k_B)/(3*pi_*e_mass*e_charge**2) * 1e10 = 21.16990563011839
+        # (2*e_charge*h_bar*k_B)/(3*pi_*e_mass*e_charge**2) * 1e10 = 21.16990563011839
         return 21.16990563011839 * self.temp_ * self.F0_eta / demoninator_ # cm^2.V^-1.s^-1
     
     ## Polar optical phonon limited mobility
@@ -172,7 +202,7 @@ class _Mobility3DCarrier:
         eps_star = (self.eps_h_*self.eps_s_)/(self.eps_s_-self.eps_h_)
         # e_charge/k_B = 11604.518121550082
         exp_fact = np.exp(self.E_pop/self.temp_*11604.518121550082) - 1.0
-        #2.0*np.sqrt(2)*pi_*eps_0*h_bar**2/e_charge/np.sqrt(e_mass**3*e_charge)*1e4 = 0.1569266969277379 # cm^2V^-1s^-1
+        # 2.0*np.sqrt(2)*pi_*eps_0*h_bar**2/e_charge/np.sqrt(e_mass**3*e_charge)*1e4 = 0.1569266969277379 # cm^2V^-1s^-1
         return 0.1569266969277379 * eps_star * exp_fact / self.m_star_ / np.sqrt(self.m_star_*self.E_pop)
     
     ## Deformation potential acoustic phonon limited mobility
@@ -184,9 +214,9 @@ class _Mobility3DCarrier:
     ## Piezoelectric phonon scattering limited mobility
     def _mu_pz(self):
         # 24*eps_0*e_mass*k_B**2/(h_bar**2*e_charge**2)*1e-24 = 0.00012925353328704564
-        #xi_0 = 0.00012925353328704564*self.eps_s_*self.m_star_*self.temp_**2/self.n_3d_
-        C_K0 = 1.0 #+(1/(1+xi_0))-2/xi_0*np.log(1.0+xi_0)
-        
+        xi_0 = 0.00012925353328704564*self.eps_s_*self.m_star_*self.temp_**2/self.n_3d_
+        C_K0 = 1.0 + (1/(1+xi_0)) - (2.0/xi_0*np.log(1.0+xi_0))
+        self.K_sqr = self.K_sqr*C_K0
         if self.carrier_degenracy_limit_ == 'nondegenerate':
             # 16*np.sqrt(2*pi_)/3*h_bar**2*eps_0/(e_charge*e_mass**(3/2)*k_B**(1/2))*1e4 = 25.43338614569858
             return 25.43338614569858*self.eps_s_/(np.sqrt(self.m_star_**3*self.temp_)*self.K_sqr) #cm^2V^-1s^-1
@@ -194,7 +224,7 @@ class _Mobility3DCarrier:
             # 16*k_B*eps_0/(3*pi_*h_bar*e_charge*1e18*1e2) = 0.12282713258060055 # cm^2V^-1s^-1K^-1
             FD_1 = _FermiDiracInt._cal_Fermi_Dirac_integral(self.eta_f_, FD_order = 'one',
                                                             FD_int_approach=self.FD_int_approach_)
-            return self.temp_*self.eps_s_*FD_1*0.12282713258060055/(self.n_3d_*self.K_sqr*C_K0) #cm^2V^-1s^-1
+            return self.temp_*self.eps_s_*FD_1*0.12282713258060055/(self.n_3d_*self.K_sqr) #cm^2V^-1s^-1
     
     ## Dislocation limited mobility
     def _dis_facts(self):
@@ -210,24 +240,25 @@ class _Mobility3DCarrier:
         return
     
     def _td_chg_dis_mu(self): 
+        nf2_dis = self.n_dislocation_ * self.f_dislocation_ * self.f_dislocation_
         if self.carrier_degenracy_limit_ == 'degenerate':
             #4k_F^2 lambda^2 = 4*3**(1/3)*h_bar**2*pi_**(8/3)*eps_0/e_charge**2/e_mass*1e8 = 0.051430964880517044
             fact_12 = (1+0.051430964880517044*self.n_3d_**(1/3)*self.eps_s_/self.m_star_)**(3/2)
             # e_charge*3**(2/3)/(h_bar*pi_**(8/3))*1e-12 = 149.27327984905628 cm^2V^-1s^-1
             return 149.27327984905628 * self.c_lp * self.c_lp * self.n_3d_**(2/3) \
-                    * fact_12 / (self.n_dislocation_*self.f_dislocation_*self.f_dislocation_)  
+                    * fact_12 / nf2_dis  
         elif self.carrier_degenracy_limit_ == 'nondegenerate':
             # 128*np.sqrt(2)/np.sqrt(pi_)*(eps_0**(3/2)*k_B/np.sqrt(e_mass)/e_charge**2*1e-16)=0.15163209085564022
             # 16*np.sqrt(2)*(eps_0**(3/2)*k_B/np.sqrt(e_mass)/e_charge**2*1e-16) = 0.03359511041974182
             return 0.15163209085564022 * self.c_lp * self.c_lp * self.temp_\
                     *np.sqrt(self.eps_s_*self.eps_s_*self.eps_s_*self.n_3d_/self.m_star_)\
-                        / (self.n_dislocation_*self.f_dislocation_*self.f_dislocation_)
+                        / nf2_dis
         else:  
             I_eta = _FermiDiracInt._FD_dis_chg_Integration(self.eta_f_, self.dis_B_fact)  
             #8*np.sqrt(2)/pi_**2 * np.sqrt(e_mass*k_B**3)*eps_0/(e_charge*h_bar**2)*1e-28=0.027890781017309893
             return 0.027890781017309893*self.c_lp*self.c_lp*self.eps_s_\
-                    *np.sqrt(self.m_star_*self.temp_*self.temp_*self.temp_)*self.F1hRatio*I_eta\
-                        /(self.n_dislocation_*self.f_dislocation_*self.f_dislocation_)
+                    *np.sqrt(self.m_star_*self.temp_*self.temp_*self.temp_)\
+                     *self.F1hRatio*I_eta/nf2_dis
                         
     def _td_str_dis_mu(self): 
         I_eta = _FermiDiracInt._FD_dis_str_Integration(self.eta_f_, self.dis_B_fact)     
@@ -238,15 +269,15 @@ class _Mobility3DCarrier:
                 
     def _ion_imp_mu(self):
         # 24*eps_0*e_mass*k_B**2/(h_bar**2*e_charge**2)*1e-24 = 0.00012925353328704564
-        xi_0 = 0.00012925353328704564*self.eps_s_*self.m_star_*self.temp_**2/self.n_3d_
-        C_K0 = 1.0/(np.log(1.0+xi_0) - (xi_0/(1.0+xi_0)))
+        xi_0 = 0.00012925353328704564*self.eps_s_*self.m_star_*self.temp_*self.temp_/self.n_3d_
+        C_K0 = np.log(1.0+xi_0) - (xi_0/(1.0+xi_0))
         #print(1+(1/(1+xi_0))-2/xi_0*np.log(1.0+xi_0))
         
         FD_2 = _FermiDiracInt._cal_Fermi_Dirac_integral(self.eta_f_, FD_order = 'two',
                                                         FD_int_approach=self.FD_int_approach_)
         
-        # 128*e_mass*eps_0**2*k_B**3/(h_bar**3*e_charge**3)*1e-40 = 0.49875425045367205
-        return 0.49875425045367205*self.m_star_*self.eps_s_*self.eps_s_*self.temp_**3*FD_2\
+        # 128*e_mass*eps_0**2*k_B**3/(pi_*h_bar**3*e_charge**3)*1e-40 = 0.1587584086955902
+        return 0.1587584086955902*self.m_star_*self.eps_s_*self.eps_s_*self.temp_**3*FD_2\
                 /(self.n_ion_imp*self.n_3d_*C_K0)
         
     @staticmethod
@@ -356,7 +387,8 @@ class _Mobility3DCarrier:
                 Fermi_wave_vector, _pop_wave_vector)
     
     @classmethod
-    def _3dec_props(cls, n_d, mu_d, position, eps_n_3d=1e-14, log_info=None):
+    def _3dec_props(cls, n_d, mu_d, position, eps_n_3d=1e-14, 
+                    use_mu_moment:bool=False, log_info=None):
         """
         This function calculates the effective/average properies of a 3D carrier distribution.
 
@@ -371,6 +403,10 @@ class _Mobility3DCarrier:
         eps_n_3d : float, optional (unit: 1e18 cm^-2)
             Carrier density below eps_n_3d will be considered as zero. 
             The default is 1e-14 1e18 cm^-2 == 1e4 cm^-2.
+        use_mu_moment : bool, optional 
+            If calculate mu_effective using first moment w.r.t mu. By default,
+            mu_effective is calculated using first moment w.r.t 1/mu.
+            The default is False.
         log_info : string, optional [options: 'high','medium','low', None]
             Determines the level of log to be printed. The default is None.
 
@@ -378,7 +414,7 @@ class _Mobility3DCarrier:
         -------
         IntegratedEdensity: float (unit: 1E13 cm^-2)
             Integrated carrier density.
-        average_mu : tuple of two floats (unit: cm^2.V^-1.s^-1)
+        average_mu : float or tuple of two floats (unit: cm^2.V^-1.s^-1)
             First number is the effective/average mobility calculated using first 
             moment of carrier density w.r.t 1/mu. Second one is the average mobility 
             calculated using first moment of carrier density w.r.t mu.
@@ -400,38 +436,41 @@ class _Mobility3DCarrier:
                     mu_d_tmp = mu_d[keys].to_numpy(dtype=float)
                     average_mu_ = cls._cal_mobility_averages(n_d_, mu_d_tmp, 
                                                              IntegratedEdensity, 
-                                                             position)
+                                                             position, use_mu_moment=
+                                                             use_mu_moment)
                     SheetResistance[keys] = cls._sheet_resistance(average_mu_, 
                                                                   IntegratedEdensity)
                     average_mu[keys] = average_mu_
         else:
-            average_mu = cls._cal_mobility_averages(n_d_, mu_d, IntegratedEdensity, position)
+            average_mu = cls._cal_mobility_averages(n_d_, mu_d, IntegratedEdensity, 
+                                                    position, use_mu_moment=
+                                                    use_mu_moment)
             SheetResistance = cls._sheet_resistance(average_mu, IntegratedEdensity)
-            if log_info is not None:
-               print(f'\to ave_es = {IntegratedEdensity*1e-2:0.2f} x 1E13 cm^-2')
-               print(f'\to ave_mu = {average_mu[0]:.2f} ({average_mu[1]:.2f}) cm^2.V^-1.s^-1')
-               print(f'\to Rsh = {SheetResistance[0]:.2f} ({SheetResistance[1]:.2f}) Ohm/sq')
         return IntegratedEdensity*1e-2, average_mu, SheetResistance
     
     @staticmethod
     def _sheet_resistance(average_mu, IntegratedEdensity):
         # R = 1/(e * carrier_density * mu) ohm/square
         # 1/(1e11*e_charge) = 62415090.744607635 Ohm/sq
+        if isinstance(average_mu, float):
+            return 62415090.744607635/(average_mu*IntegratedEdensity)
         return tuple([62415090.744607635/(ave_mu*IntegratedEdensity) for ave_mu in average_mu])
         
     @staticmethod
-    def _cal_mobility_averages(n_d_, mu_d, IntegratedEdensity, position):
+    def _cal_mobility_averages(n_d_, mu_d, IntegratedEdensity, position, 
+                               use_mu_moment:bool=False):
         ## Procedure-1: using inverse mobility
         density_mobility_ratio = n_d_/mu_d
         density_mobility_ratio[np.isnan(density_mobility_ratio)] = 0
         mobility_first_moment_nominator = integrate.trapezoid(density_mobility_ratio, x=position) 
         # == 1.0/(mobility_first_moment_nominator/IntegratedEdensity)
         average_mu = IntegratedEdensity/mobility_first_moment_nominator 
-        
-        # Procedure-2: using mobility
-        density_mobility_ = n_d_*mu_d
-        density_mobility_[np.isnan(density_mobility_)] = 0
-        density_weighted_mobility_ = integrate.trapezoid(density_mobility_, x=position)
-        #print(IntegratedEdensity, mobility_first_moment_nominator, density_weighted_mobility_)
-        average_mu_ = density_weighted_mobility_/IntegratedEdensity
-        return (average_mu, average_mu_)
+        if use_mu_moment:
+            # Procedure-2: using mobility
+            density_mobility_ = n_d_*mu_d
+            density_mobility_[np.isnan(density_mobility_)] = 0
+            density_weighted_mobility_ = integrate.trapezoid(density_mobility_, x=position)
+            #print(IntegratedEdensity, mobility_first_moment_nominator, density_weighted_mobility_)
+            average_mu_ = density_weighted_mobility_/IntegratedEdensity
+            return (average_mu, average_mu_)
+        return average_mu

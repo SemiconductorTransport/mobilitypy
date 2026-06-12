@@ -215,9 +215,10 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
         _Mobility2DCarrier.__init__(self)
         
     def calculate_sheet_mobility(self, n_2d=10, rms_roughness=0.1, corr_len=1,  
-                                 n_dis=1, f_dis=0.1, T=300, 
+                                 n_ion_impurity=1, n_dis=1, f_dis=0.1, T=300, 
                                  alloy_disordered_effect:bool=False,
                                  interface_roughness_effect:bool=False,
+                                 ion_impurity_effect:bool=False,
                                  dislocation_effect:bool=False,
                                  deformation_potential_effect:bool=False, 
                                  piezoelectric_effect:bool=False,
@@ -247,7 +248,9 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
             
         The considered scattering mechanism are:
             Interface roughness mediated (IRF)
-            Threading dislocation mediated (DIS)
+            Ionized impurity mediated (ION_IMP)
+            Threading dislocation charge mediated (DIS_Chg)
+            Threading dislocation strain field mediated (DIS_Strain)
             Alloy disorder limited (AD)
             Deformation potential mediated (DP)
             Piezoelectric effect (PE)
@@ -265,6 +268,8 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
             contribution. The default is 0.1.
         corr_len : float, optional (unit: nm)
             Correlation length of interface roughness. The default is 1.
+        n_ion_impurity : float, optional (unit: 1e14 cm^-3)
+            Volumetric ionized impurity density. The default is 1.
         n_dis : float, optional (unit: 10^8 cm^-2)
             Threading dislocation density. The default is 1.
         f_dis : float, optional (unit: unitless)
@@ -279,6 +284,9 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
         interface_roughness_effect : bool, optional
             Whether to calculate interface roughness effect mediated mobility. Or, whether to include 
             this contribution in total mobility calculation. The default is False.
+        ion_impurity_effect : bool, optional
+            Whether to calculate ionized impurity mediated coloumb scattering mobility. Or, whether  
+            to include this contribution in total mobility calculation. The default is False.
         dislocation_effect : bool, optional
             Whether to calculate dislocation_effect mediated mobility. Or, whether to include 
             this contribution in total mobility calculation. The default is False.
@@ -335,6 +343,7 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
 
         self.alloy_disordered_effect_=alloy_disordered_effect
         self.interface_roughness_effect_=interface_roughness_effect
+        self.ion_impurity_effect_=ion_impurity_effect
         self.dislocation_effect_=dislocation_effect
         self.deformation_potential_effect_=deformation_potential_effect
         self.piezoelectric_effect_=piezoelectric_effect
@@ -344,7 +353,8 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
         self.total_mobility_=total_mobility
         self.mobility_model_=mobility_model
         return self._calculate_sheet_mobility(n_2d=n_2d, rms_roughness=rms_roughness, 
-                                              corr_len=corr_len, n_dis=n_dis, f_dis=f_dis, 
+                                              corr_len=corr_len, n_ion_impurity=
+                                              n_ion_impurity, n_dis=n_dis, f_dis=f_dis, 
                                               T=T, return_sc_rates=return_sc_rates)
     @staticmethod
     def sc_rate_2_mobility(mstar_by_e, scattering_rate):
@@ -619,11 +629,11 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
                               td_dislocation_chg_effect:bool=False,
                               td_dislocation_strain_effect:bool=False,
                               piezoelectric_effect:bool=False,
-                              acoustic_phonon_effect:bool=False,
+                              deformation_potential_effect:bool=False,
                               polar_optical_phonon_effect:bool=False,
                               ionized_impurity_effect:bool=False,
                               total_mobility:bool=True,
-                              calculate_total_mobility_only:bool=False, 
+                              return_total_mobility_only:bool=False, 
                               mobility_model_version:str='v1',
                               inverse_half_FD_method:str='minimax_piecewise',
                               FermiDirac_integration_approach:str='minimax_piecewise',
@@ -634,11 +644,14 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             
         The considered scattering mechanism are:
             Alloy disorder limited (AD)
-            Threading dislocation mediated (DIS_TD)
-            Piezoelectric effect (PE)
+            Charged threading dislocation mediated (DIS_TD_CHG)
+            Strain filed from threading dislocation (DIS_TD_STR)
+            Piezoelectric phonon effect (PE)
             Acoustic deformation potential phonon (DP)
             Polar optical phonon (POP)
             Ionized impurity (ION_IMP)
+            Total acoustic phonon (ACP=1/(1/DP+1/PE))
+            Total threading dislocation mediated (DIS_TD=1/(1/DIS_TD_CHG+1/DIS_TD_STR))
 
         Parameters
         ----------
@@ -662,13 +675,10 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             The default is False.
         td_dislocation_strain_effect : bool, optional
             Whether to calculate scattering from strain field of threading edge dislocations.
-            The default is False. If both the td_dislocation_chg_effect and 
-            td_dislocation_strain_effect are True, total dislocation mobility 
-            is also calculated.
-            mu_DIS_TD = (1/mu_DIS_TD_CHG + 1/mu_DIS_TD_STR)^-1
+            The default is False. 
         piezoelectric_effect : bool, optional
             Whether to calculate piezoelectric effect mediated mobility. The default is False.
-        acoustic_phonon_effect : bool, optional
+        deformation_potential_effect : bool, optional
             Whether to calculate deformation potential mediated scattering due to 
             the acoustic phonon effect mediated mobility. The default is False.
         polar_optical_phonon_effect : bool, optional
@@ -677,9 +687,9 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             Whether to calculate ionized impurity effect mediated mobility. The default is False.
         total_mobility : bool, optional
            Whether to calculate total mobility. The default is True.
-        calculate_total_mobility_only : 
-            Calculate only the total mobility. If False the return data also contains individual 
-            specified contributions.
+        return_total_mobility_only : 
+            Return only the total mobility. If False the return data also contains individual 
+            specified contributions. The default is False.
         mobility_model_version : str, optional [options: 'v1']
             Which mobility model to use. The default is 'v1'.
         inv_half_FD_method : str, optional [options: 'JD_approx', 'minimax_piecewise']
@@ -705,6 +715,22 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         Mobility: pandas dataframe of mobilities (unit: cm^2 V^-1 S^-1).
             Total (or individual contributions) local carrier mobility.
             
+            NOTE-1: When either td_dislocation_chg_effect or 
+            td_dislocation_strain_effect is True, total dislocation mobility 
+            is also calculated. 
+            If only td_dislocation_chg_effect=True: mu_DIS_TD = mu_DIS_TD_CHG
+            If only td_dislocation_str_effect=True: mu_DIS_TD = mu_DIS_TD_STR
+            If td_dislocation_chg_effect=True and td_dislocation_strain_effect=True:
+                mu_DIS_TD = (1/mu_DIS_TD_CHG + 1/mu_DIS_TD_STR)^-1
+                
+            NOTE-2: When either piezoelectric_effect or 
+            deformation_potential_effect is True, total acoustic phonon mediated
+            mobility is also calculated. 
+            If only piezoelectric_effect=True: mu_ACP = mu_PE
+            If only deformation_potential_effect=True: mu_ACP = mu_DP
+            If piezoelectric_effect=True and deformation_potential_effect=True:
+                mu_ACP = (1/mu_PE + 1/mu_DP)^-1
+            
         """
         if carrier_degeneracy_limit != 'general' and self.print_info is not None:
             print('NB: Degenerate and non-degenerate limits are only implemented for dislocation scattering.')
@@ -714,10 +740,10 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         self.td_dislocation_chg_effect_=td_dislocation_chg_effect
         self.td_dislocation_strain_effect_=td_dislocation_strain_effect
         self.piezoelectric_effect_=piezoelectric_effect
-        self.acoustic_phonon_effect_=acoustic_phonon_effect
+        self.deformation_potential_effect_=deformation_potential_effect
         self.polar_optical_phonon_effect_=polar_optical_phonon_effect
         self.ionized_impurity_effect_=ionized_impurity_effect
-        self.only_total_mobility = calculate_total_mobility_only
+        self.return_only_total_mobility = return_total_mobility_only
         self.total_mobility_=total_mobility
         self.mobility_model_=mobility_model_version
         self.inverse_half_FD_method_ = inverse_half_FD_method 
@@ -726,7 +752,7 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
         return self._calculate_3d_mobility(n_3d=n_3d, n_dis=n_dis, n_ion_impurity=
                                            n_ion_impurity, f_dis=f_dis, T=T)
     
-    def calculate_3DEC_props(self, n_d, mu_d, position):
+    def calculate_3DEC_props(self, n_d, mu_d, position, use_mu_moment:bool=False):
         """
         This function calculates the effective/average properies of a 3D carrier distribution.
 
@@ -739,25 +765,30 @@ class Mobility3DCarrier(_MobilityCarrier, _Mobility3DCarrier):
             The position dependent carrier mobility(ies) distribution.
         position : 1d numpy array of float (unit: nm)
             The position array.
+        use_mu_moment : bool, optional 
+            If calculate mu_effective using first moment w.r.t mu. By default,
+            mu_effective is calculated using first moment w.r.t 1/mu.
+            The default is False.
 
         Returns
         -------
         IntegratedEdensity: float (unit: 1E13 cm^-2)
             Integrated carrier density.
-        average_mu : tuple of two floats (unit: cm^2.V^-1.s^-1)
-            First number is the effective/average mobility calculated using first 
-            moment of carrier density w.r.t 1/mu. Second one is the average mobility 
+        average_mu : float or tuple of two floats (unit: cm^2.V^-1.s^-1)
+            Effective/average mobility calculated using first moment of carrier 
+            density w.r.t 1/mu. If use_mu_moment=True, tuple of two floats is 
+            returned with the second number as the average mobility 
             calculated using first moment of carrier density w.r.t mu.
             If mu_d is DataFrame, return is dictionary with keys and values 
             corresponding to different contributions.
-        SheetResistance : tuple of two floats (unit: Ohm/sq)
+        SheetResistance : float or tuple of two floats (unit: Ohm/sq)
             Effective sheet resistance. Using average mobility values from average_mu.
             If mu_d is DataFrame, return is dictionary with keys and values 
             corresponding to different contributions.
 
         """ 
         return self._3dec_props(n_d, mu_d, position, eps_n_3d=self.eps_n_3d,
-                                log_info=self.print_info)
+                                use_mu_moment=use_mu_moment, log_info=self.print_info)
 
 #==============================================================================
 class Plottings(_plot_mobilities):  

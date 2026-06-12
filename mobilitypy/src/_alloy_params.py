@@ -138,7 +138,7 @@ class _AlloyParams:
         alloy_name = ''.join(self.bins_)
         self.alloy_name = _AlloyParams._alloy_name_map.get(alloy_name)
         if self.alloy_name is None: 
-            raise ValueError('Requested alloyes are not implemented yet. Contact developer.')
+            raise ValueError(f'Requested {alloy_name} alloy is not implemented yet. Contact developer.')
             
         params_db = {self.alloy_name: material_database.get(self.alloy_name).copy()} # These are bowing parameters
         for mat_name in self.bins_:
@@ -256,36 +256,36 @@ class _AlloyParams:
         return
             
     def _cal_omega_0_ad(self, a_lp, b_lp, c_lp):
-        """
-        NOTE: As described in the DJ's book Omega_0 in alloy disorder scattering
-        mobility is not 'literally' the unit cell volume, 
-        rather it is the effective volume that atom A (or B) occupies
-        in the crystal or the average volume per atom.  
-
-        """
         if self.alloy_crys_type_ == 'wz':
-            # the average volume per atom in the wurtzite structure is given by
-            # np.sqrt(3)/8 * a^2 c. 4 atoms per unit cell. Unit cell vol = sqrt(3)/2 * a^2 c
-            return 0.21650635094610965 * a_lp * b_lp * c_lp # sqrt(3)/8 * a^2 c
+            # Primitive cell vol = np.sqrt(3)/2 * a^2 c
+            return 0.8660254037844386 * a_lp * b_lp * c_lp 
         elif self.alloy_crys_type_ == 'zb':
-            # Here the primitive cell volume is a^3/4. But we have 2 atoms per
-            # unit cell. 
-            return 0.125 * a_lp * b_lp * c_lp # a^3/8
+            # Primitive cell vol = a^3/4
+            return 0.25 * a_lp * b_lp * c_lp 
         else:
             raise ValueError(f'{self.alloy_crys_type_} is not implemented yet. Contact developer.')
                  
-    def _cal_square_electromechanical_coupling_const(self):
+    def _cal_square_electromechanical_coupling_const(self, version='Hutson'):
         e_33, e_31, e_15 = self.alloy_params_['e_33'], self.alloy_params_['e_31'], self.alloy_params_['e_15']
-        u_LA, u_TA = self.alloy_params_['LA_phonon_velocity'], self.alloy_params_['TA_phonon_velocity']
-        eps_s, rho = self.alloy_params_['static_dielectric_constant'], self.alloy_params_['mass_density']
         eps_00 = 8.8541878188e-12 #  C.V^-1.m^-1
+        eps_s = self.alloy_params_['static_dielectric_constant']
         
-        e_31_p_2_e_15 = e_31 + 2.0*e_15
-        e_33_e_31_e_15 = e_33 - e_31 - e_15
-        
-        e_l_2_av = (15.0*e_33*e_33 + 12.0*e_33*e_31_p_2_e_15 + 8.0*e_31_p_2_e_15*e_31_p_2_e_15) #/105
-        e_T_2_av = (48.0*e_15*e_15 + 16.0*e_33_e_31_e_15*e_15 + 6.0*e_33_e_31_e_15*e_33_e_31_e_15) #/105
-        
-        self.alloy_params_['electromechanical_coupling_const'] = \
-            ((e_l_2_av/(u_LA*u_LA*eps_00)) + (e_T_2_av/(u_TA*u_TA*eps_00)))/(eps_s*rho*105.0)
+        if version=='Hutson':
+            # Ref- A. R. Hutson, J. Appl. Phys., 32, 2287 (1961) 
+            u_LA, u_TA = self.alloy_params_['LA_phonon_velocity'], self.alloy_params_['TA_phonon_velocity']
+            rho = self.alloy_params_['mass_density']
+            e_31_p_2_e_15 = e_31 + 2.0*e_15
+            e_33_e_31_e_15 = e_33 - e_31 - e_15
+            
+            e_l_2_av = (15.0*e_33*e_33 + 12.0*e_33*e_31_p_2_e_15 + 8.0*e_31_p_2_e_15*e_31_p_2_e_15) #/105
+            e_T_2_av = (48.0*e_15*e_15 + 16.0*e_15*e_33_e_31_e_15 + 6.0*e_33_e_31_e_15*e_33_e_31_e_15) #/105
+            
+            self.alloy_params_['electromechanical_coupling_const'] = \
+                ((e_l_2_av/(u_LA*u_LA*eps_00)) + (e_T_2_av/(u_TA*u_TA*eps_00)))/(eps_s*rho*105.0)
+        else:
+            # Ref: Book Hamaguchi
+            c_33, c_11, c_13 = self.alloy_params_['C_33'], self.alloy_params_['C_11'], self.alloy_params_['C_13']
+            self.alloy_params_['electromechanical_coupling_const'] = \
+                ((2.0*e_31*e_31/c_11) + (e_33*e_33/c_33) + (2.0*e_15*e_15/c_13))/(9e9*eps_00*eps_s)
+            
         return 

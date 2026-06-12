@@ -36,8 +36,9 @@ class _Mobility2DCarrier:
         self.eps_n_2d = self.eps_n
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    def _calculate_sheet_mobility(self, n_2d=10, rms_roughness=0.1, corr_len=1, 
-                                  n_dis=1, f_dis=0.1, T=300, return_sc_rates:bool=False):
+    def _calculate_sheet_mobility(self, n_2d=10, rms_roughness=0.1, corr_len=1,
+                                  n_ion_impurity=1, n_dis=1, f_dis=0.1, 
+                                  T=300, return_sc_rates:bool=False):
         """
         This function calculates the sheet mobility from different scattering contributions.
         The mobility models are implemented based on the following references.
@@ -58,7 +59,8 @@ class _Mobility2DCarrier:
             
         The considered scattering mechanism are:
             Interface roughness mediated (IRF)
-            Threading dislocation mediated (DIS)
+            Ionized impurity (ION_IMP)
+            Threading dislocation mediated (DIS_chg, DIS_Strain)
             Alloy disorder limited (AD)
             Deformation potential mediated (DP)
             Piezoelectric effect (PE)
@@ -76,6 +78,8 @@ class _Mobility2DCarrier:
             contribution. The default is 0.1.
         corr_len : float, optional (unit: nm)
             Correlation length of interface roughness. The default is 1.
+        n_ion_impurity : float, optional (unit: 1e14 cm^-3)
+            Volumetric ionized impurity density. The default is 1.
         n_dis : float, optional (unit: 10^8 cm^-2)
             Threading dislocation density. The default is 1.
         f_dis : float, optional (unit: unitless)
@@ -106,7 +110,6 @@ class _Mobility2DCarrier:
         electromech_coupling_sqr = self.alloy_params_.get('electromechanical_coupling_const')
         POP_energy = self.alloy_params_.get('PO_phonon_energy')  
         isotropic_Poisson_ratio = self.alloy_params_.get('isotropic_Poisson_ratio')   
-        n_ion_impurity = 0 # not implemented yet. 
 
         if isinstance(n_2d, int) or isinstance(n_2d, float):
             n_2d = [n_2d] * len(self.comps_)
@@ -133,11 +136,12 @@ class _Mobility2DCarrier:
                 if self.print_info is not None: print('\t-- Calculating only total mobility')
                 
                 if self.alloy_disordered_effect_: total_inv_sc += self._inv_tau_ado()                   
-                if self.interface_roughness_effect_: total_inv_sc += self._inv_tau_ifr()                   
+                if self.interface_roughness_effect_: total_inv_sc += self._inv_tau_ifr()  
+                if self.ion_impurity_effect_: total_inv_sc += self._inv_tau_imp()        
                 if self.dislocation_effect_: total_inv_sc += self._inv_tau_dis()
                 if self.polar_optical_phonon_effect_: total_inv_sc += self._inv_tau_pop()
                 if self.acoustic_phonon_effect_: # 1/tau_AP = 1/tau_DP + 1/tau_PE
-                    total_inv_sc = total_inv_sc + self._inv_tau_pe()+self._inv_tau_dp()
+                    total_inv_sc = total_inv_sc + self._inv_tau_pe() + self._inv_tau_dp()
                 else:
                     if self.deformation_potential_effect_: total_inv_sc += self._inv_tau_dp()
                     if self.piezoelectric_effect_: total_inv_sc += self._inv_tau_pe()
@@ -158,13 +162,20 @@ class _Mobility2DCarrier:
                     mobility[ii]['IFR'] = self._mobility_calculator(inv_sc)
                     if return_sc_rates: mobility[ii]['IFR_sc'] = inv_sc
                     
+                if self.ion_impurity_effect_:
+                    if self.print_info is not None: print('\t-- Calculating ionized impurity effect mobility')
+                    inv_sc = self._inv_tau_imp()
+                    total_inv_sc += inv_sc
+                    mobility[ii]['ION_IMP'] = self._mobility_calculator(inv_sc)
+                    if return_sc_rates: mobility[ii]['ION_IMP_sc'] = inv_sc  
+
                 if self.dislocation_effect_:
                     if self.print_info is not None: print('\t-- Calculating dislocation effect mobility')
                     inv_sc = self._inv_tau_dis()
                     total_inv_sc += inv_sc
-                    mobility[ii]['DIS'] = self._mobility_calculator(inv_sc)
+                    mobility[ii]['DIS_Chg'] = self._mobility_calculator(inv_sc)
                     if return_sc_rates: 
-                        mobility[ii]['DIS_sc'] = inv_sc
+                        mobility[ii]['DIS_Chg_sc'] = inv_sc
                     if self.mobility_model_ == 'v2':
                         inv_sc = self._inv_tau_dis_strain()
                         total_inv_sc += inv_sc
@@ -192,9 +203,9 @@ class _Mobility2DCarrier:
                         inv_sc_dp = self._inv_tau_dp()
                         total_inv_sc += inv_sc_dp
                     if self.piezoelectric_effect_:
-                        total_inv_sc += inv_sc_pe
                         inv_sc_pe = self._inv_tau_pe()
-                    
+                        total_inv_sc += inv_sc_pe
+
                 if self.deformation_potential_effect_:
                     if self.print_info is not None: print('\t--- Calculating deformation potential effect mobility')
                     mobility[ii]['DP'] = self._mobility_calculator(inv_sc_dp)
@@ -296,7 +307,7 @@ class _Mobility2DCarrier:
         if delta_2deg:
             return 1
         
-        if mode in ['IRF','DIS','PE','DP']:
+        if mode in ['IRF','DIS','ION_IMP', 'PE','DP']:
             # eta(u) = b/(b+2*k_f*u)
             eta = self.b_/(self.b_ + 2.0*self.k_F*x)
         else: #elif mode == 'POP':
@@ -306,14 +317,14 @@ class _Mobility2DCarrier:
         # G(eta) = (2*eta^3 + 3*eta^2 + 3*eta) / 8
         G_u_ = eta*(eta*(2*eta+3)+3)/8
         
-        if mode == 'IRF':
+        if mode in ['IRF', 'POP']:
             return G_u_
+        elif mode == 'ION_IMP':
+            return F_u_*F_u_ if numerator else G_u_
         elif mode == 'DIS' and self.mobility_model_ != 'v1':
-            return F_u_**2 if numerator else G_u_
+            return F_u_*F_u_ if numerator else G_u_
         elif mode in ['DP', 'PE']:
             return F_u_ if self.mobility_model_ == 'v1' else G_u_  
-        elif mode == 'POP':
-            return G_u_
         else:
             return 1
         return 1
@@ -338,10 +349,32 @@ class _Mobility2DCarrier:
         # very low n_2d or no alloy scarring for pure binary systems.
         if self.n_2d_ < self.eps_n_2d: return 0
         #*****************************************
-        # (m0*e^4)/(8*h_bar^3*eps_0^2) * 1e-4 = 81.6046000430338 1e12 s^-1
+        # (e_mass*e_charge**4)/(8*eps_0**2*h_bar**3)*1e-16 = 81.6046000430338 1e12 s^-1
         return 81.6046000430338 * self.m_star_by_eps_s_square \
                 * (self.rms_roughness_ * self.corr_len_ * self.n_2d_)**2 \
                 * self._inv_tau_ifr_int() # 1e12 s^-1
+                
+    # ----------- coulomb impurity -------------------
+    ## Scattering due to coloumb impurity/doping 
+    def _inv_tau_imp_f(self, x):
+        return x*self._form_factor(x, mode='ION_IMP', numerator=True) \
+                 /self._int_f_denomenator(x, mode='ION_IMP')
+
+    def _inv_tau_imp_int(self):
+        return integrate.quad(self._inv_tau_imp_f, 0, 1)[0]
+
+    def _inv_tau_imp(self):
+        # Since self.k_F propto sqrt(self.n_2d_); we must safe guard the scattering mechanism 
+        # where division by either self.n_2d_ or self.k_F are done. 
+        # In case of self.q_TF_by_2k_F, the division is done by k_F. This
+        # term arrises in most scattering integration.
+        # => this safe guard ensures we do not get any scattering in cases for
+        # very low n_2d or no alloy scarring for pure binary systems.
+        if self.n_2d_ < self.eps_n_2d: return 0
+        #*****************************************
+        # e_mass*e_charge**4/(8*pi_*h_bar**3*eps_0**2)*1e-16 = 25.975550951771847 1e12 s^-1
+        return 25.975550951771847 * self.m_star_by_eps_s_square * self.n_ion_imp \
+                 * self._inv_tau_imp_int() / self.k_F**3 # 1e12 s^-1
         
     # ----------- dislocation -------------------
     ## Scattering due to threading edge dislocation charge line 
@@ -368,7 +401,7 @@ class _Mobility2DCarrier:
     
     ## Scattering due to strain field of threading edge dislocation line 
     def _inv_tau_dis_strain_f(self, x):
-        return x**2*self._form_factor(x, mode='DIS', numerator=True)\
+        return x*x*self._form_factor(x, mode='DIS', numerator=True)\
                 /self._int_f_denomenator(x, mode='DIS')
 
     def _inv_tau_dis_strain_int(self):
@@ -401,7 +434,7 @@ class _Mobility2DCarrier:
         if (self.comp_ < 1e-8) or (self.n_2d_ < self.eps_n_2d) or ((1-self.comp_)<1e-8): return 0
         #*****************************************
         #(3*e_mass*e_charge**2)/(16*h_bar**3)*1e6*1e-8**3*1e-4 = 0.37383724882773683 1e12 s^-1
-        return 0.37383724882773683 * self.m_star_ * self.omega_0_ad * self.sc_potential_**2 \
+        return 0.3738372493366166 * self.m_star_ * self.omega_0_ad * self.sc_potential_**2 \
                 * self.comp_ * (1.0 - self.comp_) * self.b_ # 1e12 s^-1
 
     # ----------- deformation potential -------------------

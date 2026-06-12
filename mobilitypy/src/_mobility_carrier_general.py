@@ -100,7 +100,7 @@ class _MobilityCarrier(_AlloyParams):
         self.sc_potential_ = sc_potential
         self.n_dislocation_ = n_dis
         self.f_dislocation_ = f_dis
-        self.n_ion_imp =n_ion_impurity
+        self.n_ion_imp = n_ion_impurity
         self.mass_density_ = mass_density
         self.v_LA = v_LA
         self.E_pop = E_pop
