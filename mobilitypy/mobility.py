@@ -12,6 +12,26 @@ class DataBase(_DataBase):
     def __init__(self):
         self.dtbase = _DataBase()
         
+    def get_data4material(self, for_material:str|None):
+        """
+        This function return the information of material parameters from the database.
+
+        Parameters
+        ----------
+        for_material : string (case sensitive)
+            The material name for which the parameters will be get. 
+            The name should match the name in database. If None, return None.
+
+        Returns
+        -------
+        dictionary
+            The parameters name and values for the requested material. If material
+            name does not exist in the database or the material name is None,
+            None will be returned.
+
+        """
+        return self.dtbase._get_data4material(for_material)
+        
     def print_database(self, for_material:str=None):
         """
         This function prints the information of material parameters from the database.
@@ -249,13 +269,14 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
         The considered scattering mechanism are:
             Interface roughness mediated (IRF)
             Ionized impurity mediated (ION_IMP)
-            Threading dislocation charge mediated (DIS_Chg)
-            Threading dislocation strain field mediated (DIS_Strain)
+            Threading dislocation charge mediated (DIS_TD_Chg)
+            Threading dislocation strain field mediated (DIS_TD_Strain)
             Alloy disorder limited (AD)
             Deformation potential mediated (DP)
             Piezoelectric effect (PE)
             Acoustic phonon (AP)
             Polar optical phonon (POP)
+            Total threading dislocation mediated (DIS_TD=1/(1/DIS_TD_Chg+1/DIS_TD_Strain))
 
         Parameters
         ----------
@@ -293,6 +314,8 @@ class Mobility2DCarrier(_MobilityCarrier, _Mobility2DCarrier):
             NOTE: It includes scattering from threading edge dislocation charge line.
             For v2 model version onwords scattering from strain field from threading
             edge dislocations is also included.
+            NOTE: DIS_TD is just post processed and does NOT double count the  
+            dislocation contributions. So, NO WORRIES!
         deformation_potential_effect : bool, optional
             Whether to calculate deformation potential effect mediated mobility. Or, whether to include 
             this contribution in total mobility calculation. The default is False.

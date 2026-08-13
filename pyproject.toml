@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel", "setuptools-scm"]
+requires = ["setuptools", "wheel"] #, "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -26,6 +26,7 @@ keywords = ["mobility", "Electron gas", "2DEG", "3DEG", "Alloy disorder"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
   "Operating System :: OS Independent",
 ]
 
@@ -50,13 +51,22 @@ namespaces = false
 #[tool.setuptools.package-data]
 #mobilitypy = ["imgs/*.png"]
 
-[tool.setuptools_scm]
-version_file = "mobilitypy/_version.py"
+#[tool.setuptools_scm]
+#version_file = "mobilitypy/_version.py"
+
+[tool.setuptools.dynamic]
+version = { attr = "mobilitypy.__version__" }
+
+[tool.coverage.run]
+omit = [ "tests/*","mobilitypy/tests/*",]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-q"
-testpaths = ["tests"]
+testpaths = ["tests", "mobilitypy/tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
 
 [project.optional-dependencies]
 test = ["pytest>=7.0", "pytest-cov>=4.1"]

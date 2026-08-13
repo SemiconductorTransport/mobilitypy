@@ -47,6 +47,30 @@ class _DataBase:
     def __init__(self):
         pass
     
+    @staticmethod
+    def _get_data4material(mat_name):
+        """
+        This function return the information of material parameters from the database.
+
+        Parameters
+        ----------
+        mat_name : string (case sensitive)
+            The material name for which the parameters will be get. 
+            The name should match the name in database. If None, return None.
+
+        Returns
+        -------
+        dictionary
+            The parameters name and values for the requested material. If material
+            name does not exist in the database or the material name is None,
+            None will be returned.
+
+        """
+        mat_db =  material_database.get(mat_name)
+        if (mat_name is None) or (mat_db is None):
+            return None
+        return mat_db.copy()
+    
     @classmethod
     def _print_database(cls, for_material=None):
         """
@@ -87,7 +111,7 @@ For ternary or higher-order materials, the parameter values represent the bowing
 to print parameter values for the specific material""")
             print(f'{database_header_info}{database_info}\nParameters (Name description => parameter name : unit):')  
 
-        params_db = material_database.get(for_material).copy()
+        params_db = cls._get_data4material(for_material)
         if params_db:
             database_header_info = f"""
 NOTE: For ternary or higher-order materials, the parameter values represent the bowing coefficients.

@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import scipy.integrate as integrate
 from ._constants import *
+import warnings
 
 ## ==============================================================================
 class _Mobility2DCarrier:
@@ -59,13 +60,15 @@ class _Mobility2DCarrier:
             
         The considered scattering mechanism are:
             Interface roughness mediated (IRF)
-            Ionized impurity (ION_IMP)
-            Threading dislocation mediated (DIS_chg, DIS_Strain)
+            Ionized impurity mediated (ION_IMP)
+            Threading dislocation charge mediated (DIS_TD_Chg)
+            Threading dislocation strain field mediated (DIS_TD_Strain)
             Alloy disorder limited (AD)
             Deformation potential mediated (DP)
             Piezoelectric effect (PE)
             Acoustic phonon (AP)
             Polar optical phonon (POP)
+            Total threading dislocation mediated (DIS_TD=1/(1/DIS_TD_Chg+1/DIS_TD_Strain))
 
         Parameters
         ----------
@@ -171,17 +174,24 @@ class _Mobility2DCarrier:
 
                 if self.dislocation_effect_:
                     if self.print_info is not None: print('\t-- Calculating dislocation effect mobility')
-                    inv_sc = self._inv_tau_dis()
-                    total_inv_sc += inv_sc
-                    mobility[ii]['DIS_Chg'] = self._mobility_calculator(inv_sc)
-                    if return_sc_rates: 
-                        mobility[ii]['DIS_Chg_sc'] = inv_sc
-                    if self.mobility_model_ == 'v2':
-                        inv_sc = self._inv_tau_dis_strain()
-                        total_inv_sc += inv_sc
-                        mobility[ii]['DIS_Strain'] = self._mobility_calculator(inv_sc)
+                    inv_sc_chg = self._inv_tau_dis()
+                    total_inv_sc += inv_sc_chg
+                    if self.mobility_model_ == 'v1':
+                        warnings.warn("Recommended to move to v2 onwords for more functionality", UserWarning)
+                        mobility[ii]['DIS'] = self._mobility_calculator(inv_sc_chg)
                         if return_sc_rates: 
-                            mobility[ii]['DIS_Strain_sc'] = inv_sc
+                            mobility[ii]['DIS_sc'] = inv_sc_chg
+                    else:
+                        mobility[ii]['DIS_TD_Chg'] = self._mobility_calculator(inv_sc_chg)
+                        inv_sc_str = self._inv_tau_dis_strain()
+                        total_inv_sc += inv_sc_str
+                        mobility[ii]['DIS_TD_Strain'] = self._mobility_calculator(inv_sc_str)
+                        total_inv_sc_td = inv_sc_chg+inv_sc_str
+                        mobility[ii]['DIS_TD'] = self._mobility_calculator(total_inv_sc_td)
+                        if return_sc_rates: 
+                            mobility[ii]['DIS_TD_Chg_sc'] = inv_sc_chg
+                            mobility[ii]['DIS_TD_Strain_sc'] = inv_sc_str
+                            mobility[ii]['DIS_TD_sc'] = total_inv_sc_td
                     
                 if self.polar_optical_phonon_effect_:
                     if self.print_info is not None: print('\t-- Calculating polar optical phonon effect mobility')
