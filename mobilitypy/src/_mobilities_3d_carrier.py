@@ -355,7 +355,7 @@ class _Mobility3DCarrier:
             I_eta_str = _FermiDiracInt._FD_dis_str_Integration(scaled_Ef,dis_B_fact)
             return (F1hRatio*I_eta_chg, F1hRatio*I_eta_str)
         
-        Fermi_energy_Gen = 8.617333262145179e-05 * T * scaled_Ef.copy() # k_B J.K^-1 = k_B/e_charge eV.K^-1
+        Fermi_energy_Gen = 8.617333262145179e-05 * T * scaled_Ef # k_B J.K^-1 = k_B/e_charge eV.K^-1
         #np.sqrt(e_charge*e_charge/eps_0/k_B)*1e4 = 144.9086756309392
         #screening_wavevector_Gen = 144.9086756309392 * np.sqrt(self.n_3d_*F1hRatio/(self.eps_s_*self.temp_)) # 1e6 cm^-1
         #np.sqrt(e_charge**2*e_mass**(3/2)*k_B**(1/2)/(eps_0*(2*pi_*pi_*pi_)**
@@ -374,7 +374,7 @@ class _Mobility3DCarrier:
         Fermi_wave_vector = 3.0936677262801355 * n_3d**(1/3) # 1e6 cm^-1
         # h_bar**2*1e4/2/e_mass/e_charge*1e12 = 0.0003809982110968585
         Fermi_energy_D = 0.0003809982110968585 * Fermi_wave_vector**2 / m_star # eV
-        scaled_Fermi_Energy_D = Fermi_energy_D.copy() * 11604.518121550082 / T # eta_f = E_f * e / (k_B.T)
+        scaled_Fermi_Energy_D = Fermi_energy_D * 11604.518121550082 / T # eta_f = E_f * e / (k_B.T)
         # 10*np.sqrt(h_bar**2*eps_0*pi_**(4/3)/(3**(1/3)*e_charge**2*e_mass*1e6)) = 3.665292799274651e-08
         _Thomas_Fermi_screening_len = 0.03665292799274651 * np.sqrt(eps_s/m_star/(n_3d**(1/3))) # 1e-6 cm
         #2*eps_0*h_bar**2*pi_**(8/3)*3**(1/3)/e_charge/e_charge/e_mass*1e8 = 0.0257154824402585

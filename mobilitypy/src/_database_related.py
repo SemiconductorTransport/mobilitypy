@@ -6,6 +6,7 @@ Created on Tue Jan  6 14:03:02 2026
 @author: badal.mondal
 """
 from .database import material_database
+from copy import deepcopy
 
 #%%# ==============================================================================
 class _DataBase:
@@ -69,7 +70,7 @@ class _DataBase:
         mat_db =  material_database.get(mat_name)
         if (mat_name is None) or (mat_db is None):
             return None
-        return mat_db.copy()
+        return deepcopy(mat_db)
     
     @classmethod
     def _print_database(cls, for_material=None):

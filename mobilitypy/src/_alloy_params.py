@@ -1,5 +1,6 @@
 from .database import material_database
 import numpy as np
+from copy import deepcopy
 #import warnings
 
 ## ==============================================================================
@@ -99,7 +100,7 @@ class _AlloyParams:
             The updated material parameters after update.
 
         """
-        params_db_tmp = params_db.copy()
+        params_db_tmp = deepcopy(params_db)
         # Avoids appending unnecessary parameters in the return database
         allowed_params = material_database['GaN'].keys() # We know one 'default' material in the database
         for mat_name, parms_ in use_mat_params.items():
@@ -140,9 +141,9 @@ class _AlloyParams:
         if self.alloy_name is None: 
             raise ValueError(f'Requested {alloy_name} alloy is not implemented yet. Contact developer.')
             
-        params_db = {self.alloy_name: material_database.get(self.alloy_name).copy()} # These are bowing parameters
+        params_db = {self.alloy_name: material_database.get(self.alloy_name)} # These are bowing parameters
         for mat_name in self.bins_:
-            params_db[mat_name] = material_database.get(mat_name).copy()
+            params_db[mat_name] = material_database.get(mat_name)
 
         if use_mat_params is None:
             return params_db  
@@ -202,7 +203,7 @@ class _AlloyParams:
             name does not exists in the database return None.
 
         """
-        return material_database.get(substrate_name).copy()
+        return deepcopy(material_database.get(substrate_name))
     
     def _get_strain_realted_properties(self):
         """
